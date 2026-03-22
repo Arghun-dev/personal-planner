@@ -1,0 +1,111 @@
+import type { ScheduleItem } from "./types";
+
+export const SCHEDULE: ScheduleItem[] = [
+  {
+    id: "s0",
+    time: "09:00 PM — 05:00 AM",
+    title: "SLEEP",
+    sub: "8 hours · non-negotiable recovery",
+    tag: "sleep",
+    start: 21,
+    end: 5,
+  },
+  {
+    id: "s1",
+    time: "05:00 AM — 05:45 AM",
+    title: "WAKE UP + COMMUTE",
+    sub: "Wake, hygiene, travel to office",
+    tag: "growth",
+    start: 5,
+    end: 5.75,
+  },
+  {
+    id: "s2",
+    time: "05:45 AM — 09:00 AM",
+    title: "DEEP STUDY BLOCK",
+    sub: "3h 15m · learning & self-improvement",
+    tag: "growth",
+    start: 5.75,
+    end: 9,
+  },
+  {
+    id: "s3",
+    time: "09:00 AM — 05:00 PM",
+    title: "COMPANY WORK",
+    sub: "8 hours · deep work for the team",
+    tag: "work",
+    start: 9,
+    end: 17,
+  },
+  {
+    id: "s4",
+    time: "05:00 PM — 05:30 PM",
+    title: "COMMUTE HOME",
+    sub: "Travel back to apartment",
+    tag: "work",
+    start: 17,
+    end: 17.5,
+  },
+  {
+    id: "s5",
+    time: "05:45 PM — 06:45 PM",
+    title: "GYM SESSION",
+    sub: "60 min · strength & conditioning",
+    tag: "gym",
+    start: 17.75,
+    end: 18.75,
+  },
+  {
+    id: "s6",
+    time: "06:45 PM — 07:45 PM",
+    title: "COOK DINNER + MEAL PREP",
+    sub: "Dinner + lunch for tomorrow",
+    tag: "meal",
+    start: 18.75,
+    end: 19.75,
+  },
+  {
+    id: "s7",
+    time: "07:45 PM — 09:00 PM",
+    title: "WIND DOWN · TV",
+    sub: "1h 15m · rest & decompress",
+    tag: "rest",
+    start: 19.75,
+    end: 21,
+  },
+];
+
+export const DAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
+export const DAYS_FULL = [
+  "Sunday",
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+];
+export const MONTHS = [
+  "Jan",
+  "Feb",
+  "Mar",
+  "Apr",
+  "May",
+  "Jun",
+  "Jul",
+  "Aug",
+  "Sep",
+  "Oct",
+  "Nov",
+  "Dec",
+];
+
+export const SCORE_STATUSES = [
+  "NO TASKS DONE",
+  "JUST STARTED",
+  "MAKING PROGRESS",
+  "HALFWAY THERE",
+  "STRONG EXECUTION",
+  "NEARLY THERE",
+  "PERFECT DAY",
+];

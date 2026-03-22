@@ -1,65 +1,132 @@
-import Image from "next/image";
+"use client";
+
+import { useState, useEffect } from "react";
+import { useDisciplineOS } from "@/hooks/use-discipline-os";
+import { Header } from "@/components/header";
+import { SectionLabel } from "@/components/section-label";
+import { ScheduleBlock } from "@/components/schedule-block";
+import { ScoreCard } from "@/components/score-card";
+import { StreakCard } from "@/components/streak-card";
+import { GymTracker } from "@/components/gym-tracker";
+import { SleepTracker } from "@/components/sleep-tracker";
+import { SleepModal } from "@/components/sleep-modal";
+import { NotesCard } from "@/components/notes-card";
+
+function getTodayWeekIdx(): number {
+  const day = new Date().getDay();
+  return day === 0 ? 6 : day - 1;
+}
 
 export default function Home() {
+  const {
+    hydrated,
+    scheduleWithState,
+    doneTasks,
+    total,
+    score,
+    streak,
+    gymDays,
+    gymCount,
+    sleepData,
+    todaySleep,
+    notes,
+    dateDisplay,
+    toggleTask,
+    toggleGym,
+    logSleep,
+    updateNotes,
+    resetToday,
+  } = useDisciplineOS();
+
+  const [sleepModalOpen, setSleepModalOpen] = useState(false);
+
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => tick((n) => n + 1), 60_000);
+    return () => clearInterval(id);
+  }, []);
+
+  if (!hydrated) return null;
+
+  function handleReset() {
+    if (window.confirm("Reset all of today's tasks? This cannot be undone.")) {
+      resetToday();
+    }
+  }
+
   return (
-    <div className="flex flex-col flex-1 items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex flex-1 w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
+    <div className="min-h-screen bg-dos-bg text-dos-text font-barlow text-base">
+      <Header
+        streak={streak}
+        score={score}
+        gymCount={gymCount}
+        dateDisplay={dateDisplay}
+      />
+
+      <main className="max-w-[1100px] mx-auto px-8 py-8 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
+        <div>
+          <SectionLabel>today&apos;s protocol</SectionLabel>
+
+          <div>
+            {scheduleWithState.map((block) => (
+              <ScheduleBlock
+                key={block.id}
+                time={block.time}
+                title={block.title}
+                sub={block.sub}
+                tag={block.tag}
+                done={block.done}
+                active={block.active}
+                onToggle={() => toggleTask(block.id)}
+              />
+            ))}
+          </div>
+
+          <div className="mt-4">
+            <SectionLabel>mission notes</SectionLabel>
+            <NotesCard value={notes} onChange={updateNotes} />
+          </div>
         </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
+
+        <div>
+          <SectionLabel>discipline score</SectionLabel>
+          <ScoreCard done={doneTasks} total={total} score={score} />
+
+          <SectionLabel>consistency streak</SectionLabel>
+          <StreakCard streak={streak} />
+
+          <SectionLabel>weekly gym tracker</SectionLabel>
+          <GymTracker
+            gymDays={gymDays}
+            gymCount={gymCount}
+            todayIdx={getTodayWeekIdx()}
+            onToggle={toggleGym}
+          />
+
+          <SectionLabel>sleep log</SectionLabel>
+          <SleepTracker
+            sleepData={sleepData}
+            todaySleep={todaySleep}
+            onOpenModal={() => setSleepModalOpen(true)}
+          />
+
+          <div className="text-right mt-2">
+            <button
+              type="button"
+              onClick={handleReset}
+              className="bg-transparent border border-dos-red-dim text-dos-red font-space-mono text-[9px] tracking-[0.15em] px-[10px] py-1 cursor-pointer rounded-[2px] hover:bg-dos-red-bg"
+            >
+              RESET TODAY
+            </button>
+          </div>
         </div>
       </main>
+
+      <SleepModal
+        open={sleepModalOpen}
+        onSave={logSleep}
+        onClose={() => setSleepModalOpen(false)}
+      />
     </div>
   );
 }

@@ -128,3 +128,65 @@
     @apply font-sans;
   }
 }
+
+/* ── Discipline OS ── */
+@theme inline {
+  --color-dos-bg: #0d0f0e;
+  --color-dos-surface: #131614;
+  --color-dos-surface2: #1a1d1b;
+  --color-dos-border: #2a2f2c;
+  --color-dos-border2: #3a403c;
+  --color-dos-amber: #e8a020;
+  --color-dos-amber-dim: #7a5510;
+  --color-dos-amber-bg: #1f1a0e;
+  --color-dos-green: #3ecf6e;
+  --color-dos-green-dim: #1a5c35;
+  --color-dos-green-bg: #0d1f14;
+  --color-dos-red: #e05252;
+  --color-dos-red-dim: #5c1f1f;
+  --color-dos-red-bg: #1f0d0d;
+  --color-dos-text: #e8e4dc;
+  --color-dos-text-dim: #7a7d78;
+  --color-dos-text-muted: #4a4d48;
+  --font-space-mono: var(--font-space-mono);
+  --font-barlow: var(--font-barlow-condensed);
+}
+
+/* Tag badge colors */
+.tag-sleep {
+  background: #1a1060;
+  color: #7070ff;
+}
+.tag-growth {
+  background: #1a0d3a;
+  color: #b070ff;
+}
+.tag-work {
+  background: #0d1a3a;
+  color: #5090ff;
+}
+.tag-gym {
+  background: #1a0d0d;
+  color: #ff6060;
+}
+.tag-meal {
+  background: #1a1a0d;
+  color: #d0c040;
+}
+.tag-rest {
+  background: #0d1a0d;
+  color: #40c060;
+}
+
+@keyframes dos-pulse {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+.dos-pulse {
+  animation: dos-pulse 2s infinite;
+}
