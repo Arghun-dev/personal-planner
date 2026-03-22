@@ -45,4 +45,9 @@ export interface AppState {
   sleep: Record<string, number>;
   notes: Record<string, string>;
   todos: TodoState;
+  /**
+   * Bad-habit tracking: weekKey → true means the user stayed clean that entire week
+   * (they mark it manually at week end). Streak = consecutive clean weeks.
+   */
+  badHabits: Record<string, boolean>;
 }

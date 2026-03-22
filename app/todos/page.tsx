@@ -12,6 +12,7 @@ import {
   XIcon,
   TagIcon,
   SaveIcon,
+  FilterIcon,
 } from "lucide-react";
 import type { TodoItem, TodoTag } from "@/lib/types";
 
@@ -378,19 +379,41 @@ export default function TodosPage() {
     score,
     gymCount,
     dateDisplay,
+    badHabitStreak,
     toggleTodoItem,
     deleteTodoItem,
     updateTodoItem,
   } = usePersonalPlanner();
 
+  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "done">("all");
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+
   if (!hydrated) return null;
 
   const { items, tags } = todos;
 
-  const sorted = [...items].sort((a, b) => {
+  const filtered = items
+    .filter((it) => {
+      if (statusFilter === "open") return !it.done;
+      if (statusFilter === "done") return it.done;
+      return true;
+    })
+    .filter((it) => {
+      if (!tagFilter) return true;
+      return it.tagIds.includes(tagFilter);
+    });
+
+  const sorted = [...filtered].sort((a, b) => {
     if (a.done !== b.done) return a.done ? 1 : -1;
     return b.createdAt - a.createdAt;
   });
+
+  const hasActiveFilter = statusFilter !== "all" || tagFilter !== null;
+
+  function clearFilters() {
+    setStatusFilter("all");
+    setTagFilter(null);
+  }
 
   return (
     <div className="min-h-screen bg-dos-bg text-dos-text font-sans text-base">
@@ -399,22 +422,91 @@ export default function TodosPage() {
         score={score}
         gymCount={gymCount}
         dateDisplay={dateDisplay}
+        badHabitStreak={badHabitStreak}
       />
 
       <main className="max-w-275 mx-auto px-8 py-8">
-        <div className="flex items-center justify-between mb-6">
+        <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-xl font-semibold">All Tasks</h1>
             <p className="text-sm text-muted-foreground mt-0.5">
               {items.filter((it) => !it.done).length} open ·{" "}
               {items.filter((it) => it.done).length} done · {items.length} total
+              {hasActiveFilter && (
+                <span className="ml-1 text-primary">· {sorted.length} shown</span>
+              )}
             </p>
           </div>
+        </div>
+
+        {/* ── Filter bar ── */}
+        <div className="flex flex-wrap items-center gap-2 mb-4">
+          <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
+            <FilterIcon className="size-3" />
+            <span className="font-semibold uppercase tracking-widest">Filter</span>
+          </div>
+
+          {/* Status filters */}
+          {(["all", "open", "done"] as const).map((s) => (
+            <button
+              key={s}
+              type="button"
+              onClick={() => setStatusFilter(s)}
+              className={cn(
+                "text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-colors capitalize",
+                statusFilter === s
+                  ? "bg-primary text-primary-foreground border-primary"
+                  : "border-border text-muted-foreground hover:border-primary hover:text-primary",
+              )}
+            >
+              {s === "all" ? "All status" : s}
+            </button>
+          ))}
+
+          {/* Divider */}
+          {tags.length > 0 && (
+            <span className="text-border">|</span>
+          )}
+
+          {/* Tag filters */}
+          {tags.map((tag) => (
+            <button
+              key={tag.id}
+              type="button"
+              onClick={() => setTagFilter(tagFilter === tag.id ? null : tag.id)}
+              className={cn(
+                "inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-all",
+                tagFilter === tag.id
+                  ? tag.color + " ring-2 ring-offset-1 ring-primary/30"
+                  : "border-border text-muted-foreground hover:border-primary",
+              )}
+            >
+              {tag.name}
+              <span className="opacity-60">
+                {items.filter((it) => it.tagIds.includes(tag.id)).length}
+              </span>
+            </button>
+          ))}
+
+          {/* Clear */}
+          {hasActiveFilter && (
+            <button
+              type="button"
+              onClick={clearFilters}
+              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors ml-1"
+            >
+              <XIcon className="size-3" /> Clear
+            </button>
+          )}
         </div>
 
         {items.length === 0 ? (
           <div className="text-center text-muted-foreground py-24 text-sm">
             No tasks yet. Add some from the main page.
+          </div>
+        ) : sorted.length === 0 ? (
+          <div className="text-center text-muted-foreground py-24 text-sm">
+            No tasks match the current filters.
           </div>
         ) : (
           <div className="rounded-xl ring-1 ring-foreground/10 bg-card overflow-visible">

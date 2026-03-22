@@ -10,6 +10,7 @@ const DEFAULT_STATE: AppState = {
   sleep: {},
   notes: {},
   todos: { tags: [], items: [] },
+  badHabits: {},
 };
 
 export function getTodayKey(): string {
@@ -29,6 +30,26 @@ function isActiveBlock(start: number, end: number): boolean {
   const now = new Date();
   const h = now.getHours() + now.getMinutes() / 60;
   return start > end ? h >= start || h < end : h >= start && h < end;
+}
+
+function computeBadHabitStreak(state: AppState): number {
+  // Count consecutive clean weeks going backwards from current week
+  let streak = 0;
+  const monday = new Date();
+  const dow = monday.getDay() || 7;
+  monday.setDate(monday.getDate() - dow + 1);
+  monday.setHours(0, 0, 0, 0);
+  for (let i = 0; i < 104; i++) {
+    const wkStart = new Date(monday);
+    wkStart.setDate(monday.getDate() - i * 7);
+    const key = `${wkStart.getFullYear()}-${wkStart.getMonth() + 1}-${wkStart.getDate()}`;
+    if (state.badHabits?.[key]) {
+      streak++;
+    } else {
+      break;
+    }
+  }
+  return streak;
 }
 
 function computeStreak(state: AppState): number {
@@ -86,6 +107,8 @@ export function usePersonalPlanner() {
   const todaySleep = state.sleep?.[todayKey];
   const notes = state.notes?.[todayKey] ?? "";
   const todos = state.todos ?? { tags: [], items: [] };
+  const badHabits = state.badHabits ?? {};
+  const badHabitStreak = computeBadHabitStreak(state);
 
   const scheduleWithState = SCHEDULE.map((block) => ({
     ...block,
@@ -309,6 +332,20 @@ export function usePersonalPlanner() {
       return next;
     });
   }, []);
+  // ── Bad habit mutations ────────────────────────────────────────────────
+
+  const toggleBadHabitClean = useCallback((weekKey: string) => {
+    setState((prev) => {
+      const bh = prev.badHabits ?? {};
+      const next: AppState = {
+        ...prev,
+        badHabits: { ...bh, [weekKey]: !bh[weekKey] },
+      };
+      persist(next);
+      return next;
+    });
+  }, []);
+
   // ───────────────────────────────────────────────────────────────────────
 
   return {
@@ -324,6 +361,8 @@ export function usePersonalPlanner() {
     todaySleep,
     notes,
     todos,
+    badHabits,
+    badHabitStreak,
     dateDisplay,
     toggleTask,
     toggleGym,
@@ -337,5 +376,6 @@ export function usePersonalPlanner() {
     addTodoTag,
     updateTodoTag,
     deleteTodoTag,
+    toggleBadHabitClean,
   };
 }

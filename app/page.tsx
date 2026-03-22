@@ -11,6 +11,7 @@ import { GymTracker } from "@/components/gym-tracker";
 import { SleepTracker } from "@/components/sleep-tracker";
 import { SleepModal } from "@/components/sleep-modal";
 import { TodoManager } from "@/components/todo-manager";
+import { BadHabitTracker } from "@/components/bad-habit-tracker";
 
 function getTodayWeekIdx(): number {
   const day = new Date().getDay();
@@ -30,6 +31,8 @@ export default function Home() {
     sleepData,
     todaySleep,
     todos,
+    badHabits,
+    badHabitStreak,
     dateDisplay,
     toggleTask,
     toggleGym,
@@ -41,6 +44,7 @@ export default function Home() {
     addTodoTag,
     updateTodoTag,
     deleteTodoTag,
+    toggleBadHabitClean,
   } = usePersonalPlanner();
 
   const [sleepModalOpen, setSleepModalOpen] = useState(false);
@@ -60,6 +64,7 @@ export default function Home() {
         score={score}
         gymCount={gymCount}
         dateDisplay={dateDisplay}
+        badHabitStreak={badHabitStreak}
       />
 
       <main className="max-w-[1100px] mx-auto px-8 py-8 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
@@ -117,6 +122,13 @@ export default function Home() {
             sleepData={sleepData}
             todaySleep={todaySleep}
             onOpenModal={() => setSleepModalOpen(true)}
+          />
+
+          <SectionLabel>leaving bad habits</SectionLabel>
+          <BadHabitTracker
+            badHabits={badHabits}
+            badHabitStreak={badHabitStreak}
+            onToggle={toggleBadHabitClean}
           />
 
         </div>

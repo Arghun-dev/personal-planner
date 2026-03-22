@@ -12,7 +12,7 @@ interface Props {
 }
 
 export function GymTracker({ gymDays, gymCount, todayIdx, onToggle }: Props) {
-  const barWidth = Math.min((gymCount / 4) * 100, 100);
+  const barWidth = Math.min((gymCount / 5) * 100, 100);
 
   return (
     <Card className="mb-4 rounded-[4px] gap-0">
@@ -22,7 +22,7 @@ export function GymTracker({ gymDays, gymCount, todayIdx, onToggle }: Props) {
             {gymCount}
           </span>
           <span className="text-muted-foreground text-[14px] font-sans">
-            / 4 sessions this week
+            / 5 sessions this week
           </span>
         </div>
 
