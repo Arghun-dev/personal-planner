@@ -1,6 +1,6 @@
 import type { ScheduleItem } from "./types";
 
-export const SCHEDULE: ScheduleItem[] = [
+export const WEEKDAY_SCHEDULE: ScheduleItem[] = [
   {
     id: "s0",
     time: "09:00 PM — 05:00 AM",
@@ -74,6 +74,125 @@ export const SCHEDULE: ScheduleItem[] = [
     end: 21,
   },
 ];
+
+export const WEEKEND_SCHEDULE: ScheduleItem[] = [
+  {
+    id: "w0",
+    time: "10:00 PM — 07:00 AM",
+    title: "SLEEP",
+    sub: "9 hours · full recovery",
+    tag: "sleep",
+    start: 22,
+    end: 7,
+  },
+  {
+    id: "w1",
+    time: "07:00 AM — 07:30 AM",
+    title: "WAKE UP + HEALTHY BREAKFAST",
+    sub: "Rise, hygiene & nutritious breakfast",
+    tag: "meal",
+    start: 7,
+    end: 7.5,
+  },
+  {
+    id: "w2",
+    time: "07:30 AM — 08:30 AM",
+    title: "GYM SESSION",
+    sub: "60 min · strength & conditioning",
+    tag: "gym",
+    start: 7.5,
+    end: 8.5,
+  },
+  {
+    id: "w3",
+    time: "08:30 AM — 09:30 AM",
+    title: "SHOPPING + SHOWER + REST",
+    sub: "Grocery run if needed, shower & decompress",
+    tag: "rest",
+    start: 8.5,
+    end: 9.5,
+  },
+  {
+    id: "w4",
+    time: "09:30 AM — 12:00 PM",
+    title: "DEEP PODCAST LISTENING",
+    sub: "2h 30m · knowledge & inspiration",
+    tag: "growth",
+    start: 9.5,
+    end: 12,
+  },
+  {
+    id: "w5",
+    time: "12:00 PM — 01:30 PM",
+    title: "COOK + EAT LUNCH",
+    sub: "Healthy meal prep & lunch",
+    tag: "meal",
+    start: 12,
+    end: 13.5,
+  },
+  {
+    id: "w6",
+    time: "01:30 PM — 02:00 PM",
+    title: "REST",
+    sub: "30 min · recharge",
+    tag: "rest",
+    start: 13.5,
+    end: 14,
+  },
+  {
+    id: "w7",
+    time: "02:00 PM — 06:00 PM",
+    title: "DEEP STUDY + LEARNING",
+    sub: "4 hours · focused self-improvement",
+    tag: "growth",
+    start: 14,
+    end: 18,
+  },
+  {
+    id: "w8",
+    time: "06:00 PM — 07:00 PM",
+    title: "EVENING WALK",
+    sub: "1 hour · fresh air & movement",
+    tag: "rest",
+    start: 18,
+    end: 19,
+  },
+  {
+    id: "w9",
+    time: "07:00 PM — 07:45 PM",
+    title: "PROTEIN DINNER",
+    sub: "Healthy high-protein evening meal",
+    tag: "meal",
+    start: 19,
+    end: 19.75,
+  },
+  {
+    id: "w10",
+    time: "07:45 PM — 09:00 PM",
+    title: "WIND DOWN · TV",
+    sub: "1h 15m · rest & decompress",
+    tag: "rest",
+    start: 19.75,
+    end: 21,
+  },
+  {
+    id: "w11",
+    time: "09:00 PM — 05:00 AM",
+    title: "SLEEP",
+    sub: "8 hours · wake at 5 AM for Monday",
+    tag: "sleep",
+    start: 21,
+    end: 5,
+  },
+];
+
+/** Returns the correct schedule for a given JS day index (0=Sun, 6=Sat). */
+export function getSchedule(jsDay: number): ScheduleItem[] {
+  return jsDay === 0 || jsDay === 6 ? WEEKEND_SCHEDULE : WEEKDAY_SCHEDULE;
+}
+
+/** Resolves to today's schedule at import time. */
+export const SCHEDULE = getSchedule(new Date().getDay());
 
 export const DAYS = ["MON", "TUE", "WED", "THU", "FRI", "SAT", "SUN"];
 export const DAYS_FULL = [

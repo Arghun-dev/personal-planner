@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useDisciplineOS } from "@/hooks/use-discipline-os";
+import { usePersonalPlanner } from "@/hooks/use-personal-planner";
 import { Header } from "@/components/header";
 import { SectionLabel } from "@/components/section-label";
 import { ScheduleBlock } from "@/components/schedule-block";
@@ -10,7 +10,8 @@ import { StreakCard } from "@/components/streak-card";
 import { GymTracker } from "@/components/gym-tracker";
 import { SleepTracker } from "@/components/sleep-tracker";
 import { SleepModal } from "@/components/sleep-modal";
-import { NotesCard } from "@/components/notes-card";
+import { TodoManager } from "@/components/todo-manager";
+import { Button } from "@/components/ui/button";
 
 function getTodayWeekIdx(): number {
   const day = new Date().getDay();
@@ -29,14 +30,20 @@ export default function Home() {
     gymCount,
     sleepData,
     todaySleep,
-    notes,
+    todos,
     dateDisplay,
     toggleTask,
     toggleGym,
     logSleep,
-    updateNotes,
     resetToday,
-  } = useDisciplineOS();
+    addTodoItem,
+    toggleTodoItem,
+    deleteTodoItem,
+    updateTodoItem,
+    addTodoTag,
+    updateTodoTag,
+    deleteTodoTag,
+  } = usePersonalPlanner();
 
   const [sleepModalOpen, setSleepModalOpen] = useState(false);
 
@@ -55,7 +62,7 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-dos-bg text-dos-text font-barlow text-base">
+    <div className="min-h-screen bg-dos-bg text-dos-text font-sans text-base">
       <Header
         streak={streak}
         score={score}
@@ -83,8 +90,18 @@ export default function Home() {
           </div>
 
           <div className="mt-4">
-            <SectionLabel>mission notes</SectionLabel>
-            <NotesCard value={notes} onChange={updateNotes} />
+            <SectionLabel>tasks</SectionLabel>
+            <TodoManager
+              items={todos.items}
+              tags={todos.tags}
+              onAddItem={addTodoItem}
+              onToggleItem={toggleTodoItem}
+              onDeleteItem={deleteTodoItem}
+              onUpdateItem={updateTodoItem}
+              onAddTag={addTodoTag}
+              onUpdateTag={updateTodoTag}
+              onDeleteTag={deleteTodoTag}
+            />
           </div>
         </div>
 
@@ -111,13 +128,14 @@ export default function Home() {
           />
 
           <div className="text-right mt-2">
-            <button
-              type="button"
+            <Button
+              variant="destructive"
+              size="sm"
               onClick={handleReset}
-              className="bg-transparent border border-dos-red-dim text-dos-red font-space-mono text-[9px] tracking-[0.15em] px-[10px] py-1 cursor-pointer rounded-[2px] hover:bg-dos-red-bg"
+              className="font-mono text-[9px] tracking-[0.15em]"
             >
               RESET TODAY
-            </button>
+            </Button>
           </div>
         </div>
       </main>

@@ -1,22 +1,15 @@
 import type { Metadata } from "next";
-import { Space_Mono, Barlow_Condensed } from "next/font/google";
+import { Manrope } from "next/font/google";
 import "./globals.css";
 
-const spaceMono = Space_Mono({
-  weight: ["400", "700"],
+const manrope = Manrope({
   subsets: ["latin"],
-  variable: "--font-space-mono",
-});
-
-const barlowCondensed = Barlow_Condensed({
-  weight: ["300", "400", "600", "700", "900"],
-  subsets: ["latin"],
-  variable: "--font-barlow-condensed",
+  variable: "--font-sans",
 });
 
 export const metadata: Metadata = {
-  title: "DISCIPLINE OS",
-  description: "Personal discipline & routine tracker",
+  title: "Personal Planner",
+  description: "Personal planner & routine tracker",
 };
 
 export default function RootLayout({
@@ -25,10 +18,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${spaceMono.variable} ${barlowCondensed.variable} h-full`}
-    >
+    <html lang="en" className={`${manrope.variable} h-full`}>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );

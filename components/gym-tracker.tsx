@@ -1,8 +1,11 @@
-import { cn } from '@/lib/utils';
-import { DAYS } from '@/lib/constants';
+import { cn } from "@/lib/utils";
+import { DAYS } from "@/lib/constants";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Progress } from "@/components/ui/progress";
 
 interface Props {
-  gymDays:  Record<string, boolean>;
+  gymDays: Record<string, boolean>;
   gymCount: number;
   todayIdx: number;
   onToggle: (idx: number) => void;
@@ -12,44 +15,48 @@ export function GymTracker({ gymDays, gymCount, todayIdx, onToggle }: Props) {
   const barWidth = Math.min((gymCount / 4) * 100, 100);
 
   return (
-    <div className="bg-dos-surface border border-dos-border rounded-[4px] p-5 mb-4">
-      <div className="flex items-baseline gap-2">
-        <span className="font-space-mono text-[22px] font-bold text-dos-red">{gymCount}</span>
-        <span className="text-dos-text-dim text-[14px] font-barlow">/ 4 sessions this week</span>
-      </div>
+    <Card className="mb-4 rounded-[4px] gap-0">
+      <CardContent className="p-5">
+        <div className="flex items-baseline gap-2">
+          <span className="font-mono text-[22px] font-bold text-destructive">
+            {gymCount}
+          </span>
+          <span className="text-muted-foreground text-[14px] font-sans">
+            / 4 sessions this week
+          </span>
+        </div>
 
-      <div className="grid grid-cols-7 gap-[6px] my-3">
-        {DAYS.map((day, i) => {
-          const done = !!gymDays[String(i)];
-          return (
-            <button
-              key={day}
-              type="button"
-              onClick={() => onToggle(i)}
-              className={cn(
-                'aspect-square border rounded-[2px] flex flex-col items-center justify-center cursor-pointer transition-all duration-150',
-                done
-                  ? 'bg-dos-red-bg border-dos-red-dim'
-                  : i === todayIdx
-                    ? 'border-dos-amber-dim'
-                    : 'border-dos-border hover:border-dos-border2',
-              )}
-            >
-              <div className="text-[14px] mb-[1px] leading-none">{done ? '💪' : '○'}</div>
-              <div className={cn('font-space-mono text-[9px] uppercase tracking-[0.05em]', done ? 'text-dos-red' : 'text-dos-text-dim')}>
-                {day}
-              </div>
-            </button>
-          );
-        })}
-      </div>
+        <div className="grid grid-cols-7 gap-[6px] my-3">
+          {DAYS.map((day, i) => {
+            const done = !!gymDays[String(i)];
+            return (
+              <Button
+                key={day}
+                type="button"
+                variant={done ? "destructive" : "outline"}
+                size="icon"
+                onClick={() => onToggle(i)}
+                className={cn(
+                  "h-auto aspect-square flex-col gap-0 py-2 rounded-[2px] font-normal",
+                  i === todayIdx && !done && "border-primary",
+                )}
+              >
+                <div className="text-[14px] mb-[1px] leading-none">
+                  {done ? "💪" : "○"}
+                </div>
+                <div className="font-mono text-[9px] uppercase tracking-[0.05em]">
+                  {day}
+                </div>
+              </Button>
+            );
+          })}
+        </div>
 
-      <div className="h-[6px] bg-dos-border rounded-[1px] mt-2 overflow-hidden">
-        <div
-          className="h-full rounded-[1px] bg-dos-red transition-[width] duration-500"
-          style={{ width: `${barWidth}%` }}
+        <Progress
+          value={barWidth}
+          className="mt-2 h-[6px] rounded-[1px] [&_[data-slot=progress-indicator]]:bg-destructive"
         />
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
