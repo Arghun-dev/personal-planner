@@ -3,6 +3,10 @@
 import { useState, useEffect, useCallback, startTransition } from "react";
 import type { AppState, TodoItem, TodoTag } from "@/lib/types";
 import { getSchedule, DAYS, DAYS_FULL, MONTHS } from "@/lib/constants";
+import { createClient } from "@/lib/supabase/client";
+
+const supabase = createClient();
+const PLANNER_KEY = "personal";
 
 const DEFAULT_STATE: AppState = {
   days: {},
@@ -69,27 +73,25 @@ function computeStreak(state: AppState): number {
 }
 
 function persist(newState: AppState) {
-  try {
-    localStorage.setItem("personalPlanner", JSON.stringify(newState));
-  } catch {
-    /* ignore */
-  }
+  void supabase
+    .from("planner_state")
+    .upsert({ key: PLANNER_KEY, data: newState, updated_at: new Date().toISOString() });
 }
 
 export function usePersonalPlanner() {
-  const [state, setState] = useState<AppState>(() => {
-    if (typeof window === "undefined") return DEFAULT_STATE;
-    try {
-      const raw = localStorage.getItem("personalPlanner");
-      return raw ? (JSON.parse(raw) as AppState) : DEFAULT_STATE;
-    } catch {
-      return DEFAULT_STATE;
-    }
-  });
+  const [state, setState] = useState<AppState>(DEFAULT_STATE);
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    startTransition(() => setHydrated(true));
+    supabase
+      .from("planner_state")
+      .select("data")
+      .eq("key", PLANNER_KEY)
+      .maybeSingle()
+      .then(({ data: row }) => {
+        if (row?.data) setState(row.data as AppState);
+        startTransition(() => setHydrated(true));
+      });
   }, []);
 
   // Pick the right schedule for today
