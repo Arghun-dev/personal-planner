@@ -130,7 +130,6 @@ export default function Home() {
             badHabitStreak={badHabitStreak}
             onToggle={toggleBadHabitClean}
           />
-
         </div>
       </main>
 

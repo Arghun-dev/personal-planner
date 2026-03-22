@@ -28,7 +28,11 @@ interface Props {
 
 const TARGET_WEEKS = 4; // visual target on the progress bar (4 weeks = 1 month)
 
-export function BadHabitTracker({ badHabits, badHabitStreak, onToggle }: Props) {
+export function BadHabitTracker({
+  badHabits,
+  badHabitStreak,
+  onToggle,
+}: Props) {
   // Build last 8 weeks (most recent last)
   const weeks: { key: string; label: string; isCurrent: boolean }[] = [];
   const today = new Date();
@@ -38,23 +42,32 @@ export function BadHabitTracker({ badHabits, badHabitStreak, onToggle }: Props) 
     const d = new Date(today);
     d.setDate(today.getDate() - i * 7);
     const key = getWeekKey(d);
-    weeks.push({ key, label: weekLabel(key), isCurrent: key === currentWeekKey });
+    weeks.push({
+      key,
+      label: weekLabel(key),
+      isCurrent: key === currentWeekKey,
+    });
   }
 
   const barValue = Math.min((badHabitStreak / TARGET_WEEKS) * 100, 100);
 
   const emoji =
-    badHabitStreak >= 12 ? "🏆" :
-    badHabitStreak >= 8  ? "💎" :
-    badHabitStreak >= 4  ? "🔥" :
-    badHabitStreak >= 1  ? "⚡" : "○";
+    badHabitStreak >= 12
+      ? "🏆"
+      : badHabitStreak >= 8
+        ? "💎"
+        : badHabitStreak >= 4
+          ? "🔥"
+          : badHabitStreak >= 1
+            ? "⚡"
+            : "○";
 
   const subtitle =
     badHabitStreak === 0
       ? "Mark this week clean to start your streak"
       : badHabitStreak === 1
-      ? "1 clean week — keep going!"
-      : `${badHabitStreak} consecutive clean weeks`;
+        ? "1 clean week — keep going!"
+        : `${badHabitStreak} consecutive clean weeks`;
 
   return (
     <Card className="mb-4 rounded-[4px] gap-0">
@@ -87,15 +100,17 @@ export function BadHabitTracker({ badHabits, badHabitStreak, onToggle }: Props) 
                 onClick={() => onToggle(key)}
                 title={`Week of ${label} — ${clean ? "clean ✓" : "not marked"}`}
                 className={cn(
-                  "flex flex-col items-center gap-0.5 py-1.5 rounded-[2px] border text-center transition-all",
+                  "flex flex-col items-center gap-0.5 py-1.5 rounded-[2px] border text-center transition-all cursor-pointer",
                   clean
                     ? "bg-primary border-primary text-primary-foreground"
                     : isCurrent
-                    ? "border-primary text-muted-foreground hover:bg-primary/10"
-                    : "border-border text-muted-foreground/50 hover:border-muted-foreground",
+                      ? "border-primary text-muted-foreground hover:bg-primary/10"
+                      : "border-border text-muted-foreground/50 hover:border-muted-foreground",
                 )}
               >
-                <span className="text-[10px] leading-none">{clean ? "✓" : "○"}</span>
+                <span className="text-[10px] leading-none">
+                  {clean ? "✓" : "○"}
+                </span>
                 <span className="font-mono text-[8px] uppercase tracking-tight leading-none opacity-70">
                   {label.split(" ")[1]}
                 </span>
@@ -104,10 +119,7 @@ export function BadHabitTracker({ badHabits, badHabitStreak, onToggle }: Props) 
           })}
         </div>
 
-        <Progress
-          value={barValue}
-          className="h-[6px] rounded-[1px]"
-        />
+        <Progress value={barValue} className="h-[6px] rounded-[1px]" />
       </CardContent>
     </Card>
   );

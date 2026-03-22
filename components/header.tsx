@@ -35,7 +35,13 @@ interface Props {
   dateDisplay: string;
 }
 
-export function Header({ streak, score, gymCount, badHabitStreak, dateDisplay }: Props) {
+export function Header({
+  streak,
+  score,
+  gymCount,
+  badHabitStreak,
+  dateDisplay,
+}: Props) {
   const pathname = usePathname();
   return (
     <header className="px-8 py-4 flex items-center justify-between sticky top-0 bg-background z-50">
@@ -76,7 +82,11 @@ export function Header({ streak, score, gymCount, badHabitStreak, dateDisplay }:
         <StatChip label="Streak" value={String(streak)} />
         <StatChip label="Today" value={`${score}%`} />
         <StatChip label="Gym/wk" value={`${gymCount}/5`} variant="secondary" />
-        <StatChip label="No habits" value={`${badHabitStreak}w`} variant="outline" />
+        <StatChip
+          label="No habits"
+          value={`${badHabitStreak}w`}
+          variant="outline"
+        />
       </div>
       <Separator className="absolute bottom-0 left-0 right-0" />
     </header>

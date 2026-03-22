@@ -49,7 +49,7 @@ function TagPill({ tag, onRemove }: { tag: TodoTag; onRemove?: () => void }) {
             e.stopPropagation();
             onRemove();
           }}
-          className="opacity-60 hover:opacity-100 transition-opacity leading-none"
+          className="cursor-pointer opacity-60 hover:opacity-100 transition-opacity leading-none"
         >
           <XIcon className="size-2.5" />
         </button>
@@ -75,7 +75,7 @@ function ColorSwatches({
           title={c.label}
           onClick={() => onSelect(c.value)}
           className={cn(
-            "size-5 rounded-full border-2 transition-all",
+            "size-5 rounded-full border-2 transition-all cursor-pointer",
             c.value.split(" ")[0],
             selected === c.value
               ? "border-foreground scale-110"
@@ -119,7 +119,7 @@ function Dropdown({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className={triggerClassName}
+        className={cn("cursor-pointer", triggerClassName)}
       >
         {triggerContent}
       </button>
@@ -171,7 +171,7 @@ function TagPickerBody({
               key={tag.id}
               type="button"
               onClick={() => onToggle(tag.id)}
-              className="flex items-center justify-between gap-2 rounded-md px-2 py-1.5 hover:bg-muted transition-colors text-left w-full"
+              className="cursor-pointer flex items-center justify-between gap-2 rounded-md px-2 py-1.5 hover:bg-muted transition-colors text-left w-full"
             >
               <TagPill tag={tag} />
               {sel && <CheckIcon className="size-3 text-primary shrink-0" />}
@@ -270,14 +270,14 @@ function TagManagerPanel({
                   <button
                     type="button"
                     onClick={() => startEdit(tag)}
-                    className="p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+                    className="cursor-pointer p-1 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
                   >
                     <PencilIcon className="size-3" />
                   </button>
                   <button
                     type="button"
                     onClick={() => onDelete(tag.id)}
-                    className="p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                    className="cursor-pointer p-1 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
                   >
                     <Trash2Icon className="size-3" />
                   </button>
@@ -363,7 +363,7 @@ function TodoRow({
         type="button"
         onClick={onToggle}
         className={cn(
-          "mt-0.5 size-4 rounded border-[1.5px] flex items-center justify-center shrink-0 transition-colors",
+          "mt-0.5 size-4 rounded border-[1.5px] flex items-center justify-center shrink-0 transition-colors cursor-pointer",
           item.done
             ? "bg-primary border-primary text-primary-foreground"
             : "border-input hover:border-primary",
@@ -458,7 +458,7 @@ function TodoRow({
         <button
           type="button"
           onClick={onDelete}
-          className="inline-flex items-center justify-center size-6 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+          className="cursor-pointer inline-flex items-center justify-center size-6 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
         >
           <Trash2Icon className="size-3" />
         </button>
@@ -573,7 +573,7 @@ export function TodoManager({
                 type="button"
                 onClick={() => setActiveFilter(null)}
                 className={cn(
-                  "text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-colors",
+                  "text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-colors cursor-pointer",
                   activeFilter === null
                     ? "bg-primary text-primary-foreground border-primary"
                     : "border-border text-muted-foreground hover:border-primary hover:text-primary",
@@ -589,7 +589,7 @@ export function TodoManager({
                     setActiveFilter(activeFilter === tag.id ? null : tag.id)
                   }
                   className={cn(
-                    "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-all",
+                    "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-all cursor-pointer",
                     activeFilter === tag.id
                       ? tag.color + " ring-2 ring-offset-1 ring-primary/30"
                       : "border-border text-muted-foreground hover:border-primary",
@@ -640,7 +640,7 @@ export function TodoManager({
               type="button"
               onClick={() => setShowLinkInput((v) => !v)}
               className={cn(
-                "inline-flex items-center justify-center size-7 rounded hover:bg-muted transition-colors shrink-0",
+                "cursor-pointer inline-flex items-center justify-center size-7 rounded hover:bg-muted transition-colors shrink-0",
                 showLinkInput || newLink
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground",

@@ -54,7 +54,7 @@ function TagPill({ tag, onRemove }: { tag: TodoTag; onRemove?: () => void }) {
             e.stopPropagation();
             onRemove();
           }}
-          className="opacity-60 hover:opacity-100 leading-none"
+          className="cursor-pointer opacity-60 hover:opacity-100 leading-none"
         >
           <XIcon className="size-2.5" />
         </button>
@@ -98,7 +98,7 @@ function TagPickerDropdown({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground border border-dashed border-border rounded-full px-2 py-0.5 transition-colors"
+        className="cursor-pointer inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground border border-dashed border-border rounded-full px-2 py-0.5 transition-colors"
       >
         <TagIcon className="size-2.5" /> Add tag
       </button>
@@ -126,7 +126,7 @@ function TagPickerDropdown({
                       : [...selectedIds, tag.id],
                   )
                 }
-                className="flex items-center justify-between gap-2 w-full px-2 py-1.5 rounded-md hover:bg-muted text-left text-sm"
+                className="cursor-pointer flex items-center justify-between gap-2 w-full px-2 py-1.5 rounded-md hover:bg-muted text-left text-sm"
               >
                 <TagPill tag={tag} />
                 {sel && <CheckIcon className="size-3 text-primary shrink-0" />}
@@ -261,7 +261,7 @@ function TodoTableRow({
               type="button"
               onClick={commitEdit}
               disabled={!draftText.trim()}
-              className="inline-flex items-center justify-center size-6 rounded hover:bg-primary/10 text-primary transition-colors disabled:opacity-40"
+              className="cursor-pointer inline-flex items-center justify-center size-6 rounded hover:bg-primary/10 text-primary transition-colors disabled:opacity-40"
               title="Save"
             >
               <SaveIcon className="size-3.5" />
@@ -269,7 +269,7 @@ function TodoTableRow({
             <button
               type="button"
               onClick={cancelEdit}
-              className="inline-flex items-center justify-center size-6 rounded hover:bg-muted text-muted-foreground transition-colors"
+              className="cursor-pointer inline-flex items-center justify-center size-6 rounded hover:bg-muted text-muted-foreground transition-colors"
               title="Cancel"
             >
               <XIcon className="size-3.5" />
@@ -351,7 +351,7 @@ function TodoTableRow({
           <button
             type="button"
             onClick={startEdit}
-            className="inline-flex items-center justify-center size-6 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+            className="cursor-pointer inline-flex items-center justify-center size-6 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
             title="Edit"
           >
             <PencilIcon className="size-3" />
@@ -359,7 +359,7 @@ function TodoTableRow({
           <button
             type="button"
             onClick={onDelete}
-            className="inline-flex items-center justify-center size-6 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+            className="cursor-pointer inline-flex items-center justify-center size-6 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
             title="Delete"
           >
             <Trash2Icon className="size-3" />
@@ -385,7 +385,9 @@ export default function TodosPage() {
     updateTodoItem,
   } = usePersonalPlanner();
 
-  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "done">("all");
+  const [statusFilter, setStatusFilter] = useState<"all" | "open" | "done">(
+    "all",
+  );
   const [tagFilter, setTagFilter] = useState<string | null>(null);
 
   if (!hydrated) return null;
@@ -433,7 +435,9 @@ export default function TodosPage() {
               {items.filter((it) => !it.done).length} open ·{" "}
               {items.filter((it) => it.done).length} done · {items.length} total
               {hasActiveFilter && (
-                <span className="ml-1 text-primary">· {sorted.length} shown</span>
+                <span className="ml-1 text-primary">
+                  · {sorted.length} shown
+                </span>
               )}
             </p>
           </div>
@@ -443,7 +447,9 @@ export default function TodosPage() {
         <div className="flex flex-wrap items-center gap-2 mb-4">
           <div className="flex items-center gap-1 text-[11px] text-muted-foreground">
             <FilterIcon className="size-3" />
-            <span className="font-semibold uppercase tracking-widest">Filter</span>
+            <span className="font-semibold uppercase tracking-widest">
+              Filter
+            </span>
           </div>
 
           {/* Status filters */}
@@ -453,7 +459,7 @@ export default function TodosPage() {
               type="button"
               onClick={() => setStatusFilter(s)}
               className={cn(
-                "text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-colors capitalize",
+                "text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-colors capitalize cursor-pointer",
                 statusFilter === s
                   ? "bg-primary text-primary-foreground border-primary"
                   : "border-border text-muted-foreground hover:border-primary hover:text-primary",
@@ -464,9 +470,7 @@ export default function TodosPage() {
           ))}
 
           {/* Divider */}
-          {tags.length > 0 && (
-            <span className="text-border">|</span>
-          )}
+          {tags.length > 0 && <span className="text-border">|</span>}
 
           {/* Tag filters */}
           {tags.map((tag) => (
@@ -475,7 +479,7 @@ export default function TodosPage() {
               type="button"
               onClick={() => setTagFilter(tagFilter === tag.id ? null : tag.id)}
               className={cn(
-                "inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-all",
+                "inline-flex items-center gap-1 text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-all cursor-pointer",
                 tagFilter === tag.id
                   ? tag.color + " ring-2 ring-offset-1 ring-primary/30"
                   : "border-border text-muted-foreground hover:border-primary",
@@ -493,7 +497,7 @@ export default function TodosPage() {
             <button
               type="button"
               onClick={clearFilters}
-              className="inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors ml-1"
+              className="cursor-pointer inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground transition-colors ml-1"
             >
               <XIcon className="size-3" /> Clear
             </button>
