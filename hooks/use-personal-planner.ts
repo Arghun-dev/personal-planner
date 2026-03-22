@@ -180,24 +180,28 @@ export function usePersonalPlanner() {
 
   // ── Todo mutations ──────────────────────────────────────────────────────
 
-  const addTodoItem = useCallback((text: string, tagIds: string[]) => {
-    setState((prev) => {
-      const todos = prev.todos ?? { tags: [], items: [] };
-      const item: TodoItem = {
-        id: `t-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
-        text,
-        done: false,
-        tagIds,
-        createdAt: Date.now(),
-      };
-      const next: AppState = {
-        ...prev,
-        todos: { ...todos, items: [...todos.items, item] },
-      };
-      persist(next);
-      return next;
-    });
-  }, []);
+  const addTodoItem = useCallback(
+    (text: string, tagIds: string[], link?: string) => {
+      setState((prev) => {
+        const todos = prev.todos ?? { tags: [], items: [] };
+        const item: TodoItem = {
+          id: `t-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`,
+          text,
+          done: false,
+          tagIds,
+          createdAt: Date.now(),
+          ...(link ? { link } : {}),
+        };
+        const next: AppState = {
+          ...prev,
+          todos: { ...todos, items: [...todos.items, item] },
+        };
+        persist(next);
+        return next;
+      });
+    },
+    [],
+  );
 
   const toggleTodoItem = useCallback((id: string) => {
     setState((prev) => {
@@ -229,7 +233,10 @@ export function usePersonalPlanner() {
   }, []);
 
   const updateTodoItem = useCallback(
-    (id: string, patch: Partial<Pick<TodoItem, "text" | "tagIds">>) => {
+    (
+      id: string,
+      patch: Partial<Pick<TodoItem, "text" | "tagIds" | "link">>,
+    ) => {
       setState((prev) => {
         const todos = prev.todos ?? { tags: [], items: [] };
         const next: AppState = {

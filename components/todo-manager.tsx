@@ -16,6 +16,7 @@ import {
   PencilIcon,
   Trash2Icon,
   XIcon,
+  LinkIcon,
 } from "lucide-react";
 
 // ── Colour palette for tags ────────────────────────────────────────────────
@@ -334,7 +335,9 @@ function TodoRow({
   allTags: TodoTag[];
   onToggle: () => void;
   onDelete: () => void;
-  onUpdate: (patch: Partial<Pick<TodoItem, "text" | "tagIds">>) => void;
+  onUpdate: (
+    patch: Partial<Pick<TodoItem, "text" | "tagIds" | "link">>,
+  ) => void;
 }) {
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(item.text);
@@ -402,8 +405,22 @@ function TodoRow({
           </p>
         )}
 
+        {item.link && (
+          <a
+            href={item.link}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1 mt-1 text-[11px] text-primary hover:underline truncate max-w-full"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <LinkIcon className="size-2.5 shrink-0" />
+            {item.link.replace(/^https?:\/\//, "").slice(0, 40)}
+            {item.link.replace(/^https?:\/\//, "").length > 40 ? "…" : ""}
+          </a>
+        )}
+
         {itemTags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-1.5">
+          <div className="flex flex-wrap gap-1 mt-4">
             {itemTags.map((tag) => (
               <TagPill
                 key={tag.id}
@@ -454,12 +471,12 @@ function TodoRow({
 interface Props {
   items: TodoItem[];
   tags: TodoTag[];
-  onAddItem: (text: string, tagIds: string[]) => void;
+  onAddItem: (text: string, tagIds: string[], link?: string) => void;
   onToggleItem: (id: string) => void;
   onDeleteItem: (id: string) => void;
   onUpdateItem: (
     id: string,
-    patch: Partial<Pick<TodoItem, "text" | "tagIds">>,
+    patch: Partial<Pick<TodoItem, "text" | "tagIds" | "link">>,
   ) => void;
   onAddTag: (name: string, color: string) => void;
   onUpdateTag: (
@@ -482,14 +499,19 @@ export function TodoManager({
 }: Props) {
   const [newText, setNewText] = useState("");
   const [newTagIds, setNewTagIds] = useState<string[]>([]);
+  const [newLink, setNewLink] = useState("");
+  const [showLinkInput, setShowLinkInput] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
 
   function handleAdd() {
     const text = newText.trim();
     if (!text) return;
-    onAddItem(text, newTagIds);
+    const link = newLink.trim();
+    onAddItem(text, newTagIds, link || undefined);
     setNewText("");
     setNewTagIds([]);
+    setNewLink("");
+    setShowLinkInput(false);
   }
 
   const filtered = activeFilter
@@ -585,62 +607,99 @@ export function TodoManager({
         )}
 
         {/* ── New task input ── */}
-        <div className="flex items-center gap-2 px-4 py-3 border-b border-border">
-          <PlusIcon className="size-3.5 text-muted-foreground shrink-0" />
-          <input
-            value={newText}
-            onChange={(e) => setNewText(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-            placeholder="Add a task..."
-            className="flex-1 bg-transparent outline-none text-sm placeholder:text-muted-foreground/60 min-w-0"
-          />
+        <div className="border-b border-border">
+          <div className="flex items-center gap-2 px-4 py-3">
+            <PlusIcon className="size-3.5 text-muted-foreground shrink-0" />
+            <input
+              value={newText}
+              onChange={(e) => setNewText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+              placeholder="Add a task..."
+              className="flex-1 bg-transparent outline-none text-sm placeholder:text-muted-foreground/60 min-w-0"
+            />
 
-          {newTagIds.length > 0 && (
-            <div className="flex items-center gap-1 shrink-0">
-              {newTagIds.map((tid) => {
-                const tag = tags.find((t) => t.id === tid);
-                if (!tag) return null;
-                return (
-                  <TagPill
-                    key={tid}
-                    tag={tag}
-                    onRemove={() =>
-                      setNewTagIds((ids) => ids.filter((id) => id !== tid))
-                    }
-                  />
-                );
-              })}
+            {newTagIds.length > 0 && (
+              <div className="flex items-center gap-1 shrink-0">
+                {newTagIds.map((tid) => {
+                  const tag = tags.find((t) => t.id === tid);
+                  if (!tag) return null;
+                  return (
+                    <TagPill
+                      key={tid}
+                      tag={tag}
+                      onRemove={() =>
+                        setNewTagIds((ids) => ids.filter((id) => id !== tid))
+                      }
+                    />
+                  );
+                })}
+              </div>
+            )}
+
+            <button
+              type="button"
+              onClick={() => setShowLinkInput((v) => !v)}
+              className={cn(
+                "inline-flex items-center justify-center size-7 rounded hover:bg-muted transition-colors shrink-0",
+                showLinkInput || newLink
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+              title="Add link"
+            >
+              <LinkIcon className="size-3.5" />
+            </button>
+
+            {tags.length > 0 && (
+              <Dropdown
+                className="w-52 p-2"
+                triggerClassName="inline-flex items-center justify-center size-7 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
+                triggerContent={<TagIcon className="size-3.5" />}
+              >
+                <TagPickerBody
+                  allTags={tags}
+                  selectedIds={newTagIds}
+                  onToggle={(id) =>
+                    setNewTagIds((ids) =>
+                      ids.includes(id)
+                        ? ids.filter((i) => i !== id)
+                        : [...ids, id],
+                    )
+                  }
+                />
+              </Dropdown>
+            )}
+
+            <Button
+              size="sm"
+              onClick={handleAdd}
+              disabled={!newText.trim()}
+              className="h-7 px-3 text-xs shrink-0"
+            >
+              Add
+            </Button>
+          </div>
+          {showLinkInput && (
+            <div className="flex items-center gap-2 px-4 pb-3">
+              <LinkIcon className="size-3 text-muted-foreground shrink-0" />
+              <input
+                value={newLink}
+                onChange={(e) => setNewLink(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleAdd()}
+                placeholder="https://..."
+                className="flex-1 bg-transparent outline-none text-xs placeholder:text-muted-foreground/50 min-w-0"
+              />
+              {newLink && (
+                <button
+                  type="button"
+                  onClick={() => setNewLink("")}
+                  className="text-muted-foreground hover:text-foreground"
+                >
+                  <XIcon className="size-3" />
+                </button>
+              )}
             </div>
           )}
-
-          {tags.length > 0 && (
-            <Dropdown
-              className="w-52 p-2"
-              triggerClassName="inline-flex items-center justify-center size-7 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors shrink-0"
-              triggerContent={<TagIcon className="size-3.5" />}
-            >
-              <TagPickerBody
-                allTags={tags}
-                selectedIds={newTagIds}
-                onToggle={(id) =>
-                  setNewTagIds((ids) =>
-                    ids.includes(id)
-                      ? ids.filter((i) => i !== id)
-                      : [...ids, id],
-                  )
-                }
-              />
-            </Dropdown>
-          )}
-
-          <Button
-            size="sm"
-            onClick={handleAdd}
-            disabled={!newText.trim()}
-            className="h-7 px-3 text-xs shrink-0"
-          >
-            Add
-          </Button>
         </div>
 
         {/* ── Task list ── */}

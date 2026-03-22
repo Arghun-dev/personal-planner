@@ -13,6 +13,7 @@ export interface TodoItem {
   done: boolean;
   tagIds: string[];
   createdAt: number;
+  link?: string;
 }
 
 export interface TodoState {

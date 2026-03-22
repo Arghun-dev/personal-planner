@@ -11,7 +11,6 @@ import { GymTracker } from "@/components/gym-tracker";
 import { SleepTracker } from "@/components/sleep-tracker";
 import { SleepModal } from "@/components/sleep-modal";
 import { TodoManager } from "@/components/todo-manager";
-import { Button } from "@/components/ui/button";
 
 function getTodayWeekIdx(): number {
   const day = new Date().getDay();
@@ -35,7 +34,6 @@ export default function Home() {
     toggleTask,
     toggleGym,
     logSleep,
-    resetToday,
     addTodoItem,
     toggleTodoItem,
     deleteTodoItem,
@@ -54,12 +52,6 @@ export default function Home() {
   }, []);
 
   if (!hydrated) return null;
-
-  function handleReset() {
-    if (window.confirm("Reset all of today's tasks? This cannot be undone.")) {
-      resetToday();
-    }
-  }
 
   return (
     <div className="min-h-screen bg-dos-bg text-dos-text font-sans text-base">
@@ -127,16 +119,6 @@ export default function Home() {
             onOpenModal={() => setSleepModalOpen(true)}
           />
 
-          <div className="text-right mt-2">
-            <Button
-              variant="destructive"
-              size="sm"
-              onClick={handleReset}
-              className="font-mono text-[9px] tracking-[0.15em]"
-            >
-              RESET TODAY
-            </Button>
-          </div>
         </div>
       </main>
 
