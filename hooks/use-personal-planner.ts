@@ -3,10 +3,7 @@
 import { useState, useEffect, useCallback, startTransition } from "react";
 import type { AppState, TodoItem, TodoTag } from "@/lib/types";
 import { getSchedule, DAYS, DAYS_FULL, MONTHS } from "@/lib/constants";
-import { createClient } from "@/lib/supabase/client";
-
-const supabase = createClient();
-const PLANNER_KEY = "personal";
+import { loadState, saveState } from "@/lib/actions";
 
 const DEFAULT_STATE: AppState = {
   days: {},
@@ -73,9 +70,7 @@ function computeStreak(state: AppState): number {
 }
 
 function persist(newState: AppState) {
-  void supabase
-    .from("planner_state")
-    .upsert({ key: PLANNER_KEY, data: newState, updated_at: new Date().toISOString() });
+  void saveState(newState);
 }
 
 export function usePersonalPlanner() {
@@ -83,15 +78,10 @@ export function usePersonalPlanner() {
   const [hydrated, setHydrated] = useState(false);
 
   useEffect(() => {
-    supabase
-      .from("planner_state")
-      .select("data")
-      .eq("key", PLANNER_KEY)
-      .maybeSingle()
-      .then(({ data: row }) => {
-        if (row?.data) setState(row.data as AppState);
-        startTransition(() => setHydrated(true));
-      });
+    loadState().then((loaded) => {
+      if (loaded) setState(loaded);
+      startTransition(() => setHydrated(true));
+    });
   }, []);
 
   // Pick the right schedule for today
