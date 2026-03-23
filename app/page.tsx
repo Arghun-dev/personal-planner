@@ -228,6 +228,18 @@ export default function Home() {
                       else
                         status = minsLate > GRACE_MINS ? "failed" : "prompting";
                     }
+                  } else if (block.tag === "growth") {
+                    // Status is always system-controlled for growth blocks — never interactive.
+                    // Derived exclusively from tasks tagged "growth".
+                    if (blockTasks.length === 0) {
+                      status = minsLate > GRACE_MINS ? "failed" : "prompting";
+                    } else {
+                      const doneCount = blockTasks.filter((t) => t.done).length;
+                      if (doneCount === blockTasks.length) status = "done";
+                      else if (doneCount > 0) status = "partial";
+                      else
+                        status = minsLate > GRACE_MINS ? "failed" : "prompting";
+                    }
                   } else if (hasTasks) {
                     const doneCount = blockTasks.filter((t) => t.done).length;
                     if (doneCount === blockTasks.length) status = "done";
