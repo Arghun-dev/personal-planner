@@ -15,7 +15,7 @@ export const WEEKDAY_SCHEDULE: ScheduleItem[] = [
     time: "05:00 AM — 05:45 AM",
     title: "WAKE UP + COMMUTE",
     sub: "Wake, hygiene, travel to office",
-    tag: "growth",
+    tag: "other",
     start: 5,
     end: 5.75,
   },

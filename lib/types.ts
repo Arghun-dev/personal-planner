@@ -1,4 +1,11 @@
-export type TagType = "sleep" | "growth" | "work" | "gym" | "meal" | "rest";
+export type TagType =
+  | "sleep"
+  | "growth"
+  | "work"
+  | "gym"
+  | "meal"
+  | "rest"
+  | "other";
 
 // ── Todo Manager ───────────────────────────────────────────────────────────
 export interface TodoTag {
@@ -33,6 +40,14 @@ export interface ScheduleItem {
   end: number;
 }
 
+export interface SleepEntry {
+  hrs: number;
+  /** "22:00" in 24-h format */
+  bedTime?: string;
+  /** "06:00" in 24-h format */
+  wakeTime?: string;
+}
+
 export interface DayData {
   tasks: Record<string, boolean>;
   completed?: boolean;
@@ -42,7 +57,8 @@ export interface AppState {
   days: Record<string, DayData>;
   /** weekKey → stringified day index (0-6) → done */
   gym: Record<string, Record<string, boolean>>;
-  sleep: Record<string, number>;
+  /** Backward-compatible: old entries are plain numbers, new entries are SleepEntry */
+  sleep: Record<string, number | SleepEntry>;
   notes: Record<string, string>;
   todos: TodoState;
   /**

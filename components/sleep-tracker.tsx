@@ -1,5 +1,6 @@
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
+import type { SleepEntry } from "@/lib/types";
 
 interface SleepDay {
   key: string;
@@ -10,10 +11,48 @@ interface SleepDay {
 interface Props {
   sleepData: SleepDay[];
   todaySleep?: number;
+  todaySleepEntry?: SleepEntry;
+  plannedWakeTime?: string;
   onOpenModal: () => void;
 }
 
-export function SleepTracker({ sleepData, todaySleep, onOpenModal }: Props) {
+function fmt24to12(time: string): string {
+  const [h, m] = time.split(":").map(Number);
+  const ampm = h < 12 ? "AM" : "PM";
+  const h12 = h % 12 || 12;
+  return `${h12}:${String(m).padStart(2, "0")} ${ampm}`;
+}
+
+function wakeDeltaLabel(
+  planned: string,
+  actual: string,
+): { label: string; className: string } | null {
+  const [pH, pM] = planned.split(":").map(Number);
+  const [aH, aM] = actual.split(":").map(Number);
+  const delta = aH * 60 + aM - (pH * 60 + pM);
+  if (Math.abs(delta) < 5)
+    return { label: "on time", className: "text-chart-1" };
+  const abs = Math.abs(delta);
+  const h = Math.floor(abs / 60);
+  const m = abs % 60;
+  const time = [h > 0 ? `${h}h` : "", m > 0 ? `${m}m` : ""]
+    .filter(Boolean)
+    .join(" ");
+  if (delta > 0)
+    return {
+      label: `+${time} late`,
+      className: delta > 30 ? "text-destructive" : "text-yellow-500",
+    };
+  return { label: `${time} early`, className: "text-chart-1" };
+}
+
+export function SleepTracker({
+  sleepData,
+  todaySleep,
+  todaySleepEntry,
+  plannedWakeTime,
+  onOpenModal,
+}: Props) {
   return (
     <Card className="mb-4 rounded-[4px] gap-0">
       <CardContent className="p-5">
@@ -35,6 +74,44 @@ export function SleepTracker({ sleepData, todaySleep, onOpenModal }: Props) {
             </div>
           </div>
         </div>
+
+        {/* Wake time actual vs planned */}
+        {todaySleepEntry?.wakeTime && (
+          <div className="flex items-end justify-between mt-3 px-0.5">
+            <div>
+              <div className="font-mono text-[9px] text-muted-foreground tracking-[0.12em] uppercase mb-0.5">
+                Woke at
+              </div>
+              <div className="font-mono text-[16px] font-bold text-foreground leading-none">
+                {fmt24to12(todaySleepEntry.wakeTime)}
+              </div>
+            </div>
+            {plannedWakeTime && (
+              <div className="text-right">
+                <div className="font-mono text-[9px] text-muted-foreground tracking-[0.12em] uppercase mb-0.5">
+                  Planned
+                </div>
+                <div className="font-mono text-[16px] font-bold text-muted-foreground leading-none flex items-baseline gap-1.5">
+                  {fmt24to12(plannedWakeTime)}
+                  {(() => {
+                    const delta = wakeDeltaLabel(
+                      plannedWakeTime,
+                      todaySleepEntry.wakeTime!,
+                    );
+                    if (!delta) return null;
+                    return (
+                      <span
+                        className={`font-mono font-bold text-[10px] ${delta.className}`}
+                      >
+                        {delta.label}
+                      </span>
+                    );
+                  })()}
+                </div>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Mini bar chart – last 7 days */}
         <div className="grid grid-cols-7 gap-1 mt-3">

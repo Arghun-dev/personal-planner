@@ -201,6 +201,36 @@
   background-color: color-mix(in oklch, var(--chart-1) 12%, white) !important;
   color: var(--chart-1) !important;
 }
+.tag-other {
+  background-color: color-mix(
+    in oklch,
+    var(--muted-foreground) 12%,
+    white
+  ) !important;
+  color: var(--muted-foreground) !important;
+}
+
+@keyframes block-bump {
+  0%,
+  100% {
+    transform: translateX(0);
+  }
+  20% {
+    transform: translateX(-4px);
+  }
+  40% {
+    transform: translateX(4px);
+  }
+  60% {
+    transform: translateX(-2px);
+  }
+  80% {
+    transform: translateX(2px);
+  }
+}
+.block-bump {
+  animation: block-bump 0.6s ease-in-out;
+}
 
 @keyframes dos-pulse {
   0%,

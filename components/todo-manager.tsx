@@ -17,6 +17,7 @@ import {
   Trash2Icon,
   XIcon,
   LinkIcon,
+  SaveIcon,
 } from "lucide-react";
 
 // ── Colour palette for tags ────────────────────────────────────────────────
@@ -330,6 +331,8 @@ function TodoRow({
   onToggle,
   onDelete,
   onUpdate,
+  dragHandlers,
+  isDragOver,
 }: {
   item: TodoItem;
   allTags: TodoTag[];
@@ -338,24 +341,157 @@ function TodoRow({
   onUpdate: (
     patch: Partial<Pick<TodoItem, "text" | "tagIds" | "link">>,
   ) => void;
+  dragHandlers?: {
+    onDragStart: () => void;
+    onDragEnter: () => void;
+    onDragEnd: () => void;
+  };
+  isDragOver?: boolean;
 }) {
   const [editing, setEditing] = useState(false);
-  const [draft, setDraft] = useState(item.text);
+  const [draftText, setDraftText] = useState(item.text);
+  const [draftLink, setDraftLink] = useState(item.link ?? "");
+  const [draftTagIds, setDraftTagIds] = useState<string[]>(item.tagIds);
   const inputRef = useRef<HTMLInputElement>(null);
 
-  function commitEdit() {
-    const text = draft.trim();
-    if (text && text !== item.text) onUpdate({ text });
+  function startEdit() {
+    setDraftText(item.text);
+    setDraftLink(item.link ?? "");
+    setDraftTagIds(item.tagIds);
+    setEditing(true);
+  }
+
+  function cancelEdit() {
     setEditing(false);
   }
 
+  function commitEdit() {
+    const text = draftText.trim();
+    if (!text) return;
+    const link = draftLink.trim() || undefined;
+    onUpdate({ text, link, tagIds: draftTagIds });
+    setEditing(false);
+  }
+
+  useEffect(() => {
+    if (editing) inputRef.current?.focus();
+  }, [editing]);
+
   const itemTags = allTags.filter((t) => item.tagIds.includes(t.id));
+
+  if (editing) {
+    return (
+      <div className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-muted/30">
+        {/* Checkbox */}
+        <button
+          type="button"
+          onClick={onToggle}
+          className={cn(
+            "mt-1 size-4 rounded border-[1.5px] flex items-center justify-center shrink-0 transition-colors cursor-pointer",
+            item.done
+              ? "bg-primary border-primary text-primary-foreground"
+              : "border-input hover:border-primary",
+          )}
+        >
+          {item.done && <CheckIcon className="size-2.5 stroke-3" />}
+        </button>
+
+        {/* Edit fields */}
+        <div className="flex-1 min-w-0 space-y-2">
+          <input
+            ref={inputRef}
+            value={draftText}
+            onChange={(e) => setDraftText(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") commitEdit();
+              if (e.key === "Escape") cancelEdit();
+            }}
+            className="w-full bg-transparent outline-none text-sm border-b border-primary py-0.5"
+          />
+          <div className="flex items-center gap-1">
+            <LinkIcon className="size-3 text-muted-foreground shrink-0" />
+            <input
+              value={draftLink}
+              onChange={(e) => setDraftLink(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") commitEdit();
+                if (e.key === "Escape") cancelEdit();
+              }}
+              placeholder="https://..."
+              className="flex-1 bg-transparent outline-none text-xs border-b border-border py-0.5 placeholder:text-muted-foreground/50"
+            />
+          </div>
+          <div className="flex flex-wrap items-center gap-1">
+            {allTags
+              .filter((t) => draftTagIds.includes(t.id))
+              .map((tag) => (
+                <TagPill
+                  key={tag.id}
+                  tag={tag}
+                  onRemove={() =>
+                    setDraftTagIds((ids) => ids.filter((id) => id !== tag.id))
+                  }
+                />
+              ))}
+            <Dropdown
+              className="w-52 p-2"
+              triggerClassName="cursor-pointer inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground border border-dashed border-border rounded-full px-2 py-0.5 transition-colors"
+              triggerContent={
+                <>
+                  <TagIcon className="size-2.5" /> Add tag
+                </>
+              }
+              align="start"
+            >
+              <TagPickerBody
+                allTags={allTags}
+                selectedIds={draftTagIds}
+                onToggle={(id) =>
+                  setDraftTagIds((ids) =>
+                    ids.includes(id)
+                      ? ids.filter((i) => i !== id)
+                      : [...ids, id],
+                  )
+                }
+              />
+            </Dropdown>
+          </div>
+          <div className="flex items-center gap-1 pt-0.5">
+            <button
+              type="button"
+              onClick={commitEdit}
+              disabled={!draftText.trim()}
+              className="cursor-pointer inline-flex items-center justify-center size-6 rounded hover:bg-primary/10 text-primary transition-colors disabled:opacity-40"
+              title="Save"
+            >
+              <SaveIcon className="size-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={cancelEdit}
+              className="cursor-pointer inline-flex items-center justify-center size-6 rounded hover:bg-muted text-muted-foreground transition-colors"
+              title="Cancel"
+            >
+              <XIcon className="size-3.5" />
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div
+      draggable={!!dragHandlers}
+      onDragStart={dragHandlers?.onDragStart}
+      onDragEnter={dragHandlers?.onDragEnter}
+      onDragEnd={dragHandlers?.onDragEnd}
+      onDragOver={(e) => e.preventDefault()}
       className={cn(
         "group flex items-start gap-3 px-3 py-2.5 rounded-lg transition-colors hover:bg-muted/50",
         item.done && "opacity-60",
+        isDragOver && "border-t-2 border-primary",
+        dragHandlers && "cursor-grab active:cursor-grabbing",
       )}
     >
       {/* Checkbox visual */}
@@ -374,36 +510,14 @@ function TodoRow({
 
       {/* Text + tags */}
       <div className="flex-1 min-w-0">
-        {editing ? (
-          <input
-            ref={inputRef}
-            value={draft}
-            onChange={(e) => setDraft(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter") commitEdit();
-              if (e.key === "Escape") {
-                setDraft(item.text);
-                setEditing(false);
-              }
-            }}
-            onBlur={commitEdit}
-            className="w-full bg-transparent outline-none text-sm border-b border-primary"
-            autoFocus
-          />
-        ) : (
-          <p
-            className={cn(
-              "text-sm leading-snug cursor-text select-none",
-              item.done && "line-through text-muted-foreground",
-            )}
-            onDoubleClick={() => {
-              setEditing(true);
-              setDraft(item.text);
-            }}
-          >
-            {item.text}
-          </p>
-        )}
+        <p
+          className={cn(
+            "text-sm leading-snug select-none",
+            item.done && "line-through text-muted-foreground",
+          )}
+        >
+          {item.text}
+        </p>
 
         {item.link && (
           <a
@@ -420,17 +534,9 @@ function TodoRow({
         )}
 
         {itemTags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-4">
+          <div className="flex flex-wrap gap-1 mt-1.5">
             {itemTags.map((tag) => (
-              <TagPill
-                key={tag.id}
-                tag={tag}
-                onRemove={() =>
-                  onUpdate({
-                    tagIds: item.tagIds.filter((id) => id !== tag.id),
-                  })
-                }
-              />
+              <TagPill key={tag.id} tag={tag} />
             ))}
           </div>
         )}
@@ -438,22 +544,14 @@ function TodoRow({
 
       {/* Row actions */}
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5">
-        <Dropdown
-          className="w-52 p-2"
-          triggerClassName="inline-flex items-center justify-center size-6 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
-          triggerContent={<TagIcon className="size-3" />}
+        <button
+          type="button"
+          onClick={startEdit}
+          className="cursor-pointer inline-flex items-center justify-center size-6 rounded hover:bg-muted text-muted-foreground hover:text-foreground transition-colors"
+          title="Edit"
         >
-          <TagPickerBody
-            allTags={allTags}
-            selectedIds={item.tagIds}
-            onToggle={(tagId) => {
-              const next = item.tagIds.includes(tagId)
-                ? item.tagIds.filter((id) => id !== tagId)
-                : [...item.tagIds, tagId];
-              onUpdate({ tagIds: next });
-            }}
-          />
-        </Dropdown>
+          <PencilIcon className="size-3" />
+        </button>
 
         <button
           type="button"
@@ -478,6 +576,7 @@ interface Props {
     id: string,
     patch: Partial<Pick<TodoItem, "text" | "tagIds" | "link">>,
   ) => void;
+  onReorderItems: (fromId: string, toId: string) => void;
   onAddTag: (name: string, color: string) => void;
   onUpdateTag: (
     id: string,
@@ -493,6 +592,7 @@ export function TodoManager({
   onToggleItem,
   onDeleteItem,
   onUpdateItem,
+  onReorderItems,
   onAddTag,
   onUpdateTag,
   onDeleteTag,
@@ -502,6 +602,8 @@ export function TodoManager({
   const [newLink, setNewLink] = useState("");
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
 
   function handleAdd() {
     const text = newText.trim();
@@ -719,6 +821,22 @@ export function TodoManager({
                 onToggle={() => onToggleItem(item.id)}
                 onDelete={() => onDeleteItem(item.id)}
                 onUpdate={(patch) => onUpdateItem(item.id, patch)}
+                isDragOver={overId === item.id && dragId !== item.id}
+                dragHandlers={
+                  item.done
+                    ? undefined
+                    : {
+                        onDragStart: () => setDragId(item.id),
+                        onDragEnter: () => setOverId(item.id),
+                        onDragEnd: () => {
+                          if (dragId && overId && dragId !== overId) {
+                            onReorderItems(dragId, overId);
+                          }
+                          setDragId(null);
+                          setOverId(null);
+                        },
+                      }
+                }
               />
             ))
           )}
