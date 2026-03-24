@@ -14,7 +14,7 @@ import { SleepModal } from "@/components/sleep-modal";
 import { TodoManager } from "@/components/todo-manager";
 import { BadHabitTracker } from "@/components/bad-habit-tracker";
 import { cn } from "@/lib/utils";
-import { ClockIcon, CircleIcon } from "lucide-react";
+import { ClockIcon, CircleIcon, XIcon } from "lucide-react";
 
 function getTodayWeekIdx(): number {
   const day = new Date().getDay();
@@ -159,7 +159,11 @@ export default function Home() {
                 return delayMins > 0 ? delayMins / 60 : 0;
               })();
 
-              return scheduleWithState.map((block) => {
+              const todayWeekIdx = getTodayWeekIdx();
+              const isTodayGymSkipped =
+                gymDays[String(todayWeekIdx)] === "skipped";
+
+              return scheduleWithState.map((block, blockIdx) => {
                 const blockTagIds = todos.tags
                   .filter((t) => t.name.toLowerCase() === block.tag)
                   .map((t) => t.id);
@@ -178,19 +182,46 @@ export default function Home() {
                 const effectiveEnd = isWakeBlock
                   ? block.end + wakeDelayH
                   : block.end;
-                const effectiveActive = isWakeBlock
-                  ? isBlockActive(effectiveStart, effectiveEnd)
-                  : block.active;
+                const prevBlock =
+                  blockIdx > 0 ? scheduleWithState[blockIdx - 1] : null;
+                const prevGymIsSkippedInWindow =
+                  prevBlock?.tag === "gym" &&
+                  isTodayGymSkipped &&
+                  isBlockActive(prevBlock.start, prevBlock.end);
+
+                const effectiveActive =
+                  block.tag === "gym" && isTodayGymSkipped
+                    ? false
+                    : prevGymIsSkippedInWindow
+                      ? true
+                      : isWakeBlock
+                        ? isBlockActive(effectiveStart, effectiveEnd)
+                        : block.active;
                 const effectivePast = isWakeBlock
                   ? isBlockPast(effectiveStart, effectiveEnd)
                   : block.past;
+
+                // Blocks whose status is system-driven (not manually completable)
+                const isSystemDriven =
+                  isWakeBlock ||
+                  block.tag === "sleep" ||
+                  (block.tag === "growth" && hasTasks) ||
+                  (block.tag === "work" && hasTasks);
 
                 // ── Compute block status ──────────────────────────────────────────────────────
                 let status: BlockStatus;
                 let interactive = false;
 
-                if (effectiveActive) {
+                if (block.tag === "gym" && isTodayGymSkipped) {
+                  status = "failed";
+                } else if (effectiveActive && block.done && !isSystemDriven) {
+                  // Completed early — show as done and allow undo
+                  status = "done";
+                  interactive = true;
+                } else if (effectiveActive) {
                   status = "active";
+                  // Allow marking done early via the checkbox
+                  if (!isSystemDriven) interactive = true;
                 } else if (!effectivePast) {
                   status = "future";
                 } else {
@@ -273,6 +304,16 @@ export default function Home() {
                       nowTime={effectiveActive ? nowLabel : undefined}
                       onToggle={() => toggleTask(block.id)}
                     />
+                    {status === "active" && block.tag === "gym" && !isTodayGymSkipped && (
+                      <button
+                        type="button"
+                        onClick={() => toggleGym(todayWeekIdx)}
+                        className="w-full flex items-center gap-2 px-4 py-2 text-[11px] font-mono text-destructive hover:bg-destructive/10 border border-destructive/30 rounded-[4px] mt-1 transition-colors"
+                      >
+                        <XIcon className="size-3 shrink-0" />
+                        SKIP SESSION
+                      </button>
+                    )}
                     {hasSubItems && (
                       <div className="ml-4 pl-3 border-l-2 border-border/50 mt-0.5 space-y-0">
                         {hasWakeRow && (

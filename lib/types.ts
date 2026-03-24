@@ -57,8 +57,8 @@ export interface DayData {
 
 export interface AppState {
   days: Record<string, DayData>;
-  /** weekKey → stringified day index (0-6) → done */
-  gym: Record<string, Record<string, boolean>>;
+  /** weekKey → stringified day index (0-6) → done | "skipped" */
+  gym: Record<string, Record<string, boolean | "skipped">>;
   /** Backward-compatible: old entries are plain numbers, new entries are SleepEntry */
   sleep: Record<string, number | SleepEntry>;
   notes: Record<string, string>;

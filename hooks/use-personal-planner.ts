@@ -215,7 +215,7 @@ export function usePersonalPlanner() {
   const doneTasks = SCHEDULE.filter((b) => todayTasks[b.id]).length;
   const streak = computeStreak(state);
   const gymDays = state.gym?.[weekKey] ?? {};
-  const gymCount = Object.values(gymDays).filter(Boolean).length;
+  const gymCount = Object.values(gymDays).filter((v) => v === true).length;
   const rawSleep = state.sleep?.[todayKey];
   const todaySleep =
     rawSleep != null ? normalizeSleepEntry(rawSleep).hrs : undefined;
@@ -315,11 +315,15 @@ export function usePersonalPlanner() {
     setState((prev) => {
       const wk = getWeekKey();
       const week = prev.gym?.[wk] ?? {};
+      const current = week[String(dayIdx)];
+      // Cycle: none → skipped → done → none
+      const nextVal: boolean | "skipped" =
+        current === "skipped" ? true : current === true ? false : "skipped";
       const next: AppState = {
         ...prev,
         gym: {
           ...prev.gym,
-          [wk]: { ...week, [String(dayIdx)]: !week[String(dayIdx)] },
+          [wk]: { ...week, [String(dayIdx)]: nextVal },
         },
       };
       persist(next);

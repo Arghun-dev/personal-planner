@@ -186,7 +186,7 @@ function computeGymWeeks(state: AppState, period: number): GymWeekMetrics[] {
     if (seenWeeks.has(wk)) continue;
     seenWeeks.add(wk);
     const gymData = state.gym?.[wk] ?? {};
-    const count = Object.values(gymData).filter(Boolean).length;
+    const count = Object.values(gymData).filter((v) => v === true).length;
     gymWeeks.push({
       weekLabel: fmtDateLabel(keyToDate(wk)),
       count,
