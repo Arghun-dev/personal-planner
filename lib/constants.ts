@@ -42,7 +42,7 @@ export const WEEKDAY_SCHEDULE: ScheduleItem[] = [
     time: "05:00 PM — 05:30 PM",
     title: "COMMUTE HOME",
     sub: "Travel back to apartment",
-    tag: "work",
+    tag: "other",
     start: 17,
     end: 17.5,
   },
