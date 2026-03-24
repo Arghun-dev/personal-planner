@@ -176,22 +176,6 @@ function TodoTableRow({
   const tagPickerOpenRef = useRef(false);
   const commitRef = useRef<() => void>(() => {});
 
-  // Reassigned every render so setTimeout callbacks always see fresh state
-  commitRef.current = () => {
-    const text = draftText.trim();
-    if (!text) {
-      revert();
-      return;
-    }
-    onUpdate({
-      text,
-      link: draftLink.trim() || undefined,
-      tagIds: draftTagIds,
-      dueDate: draftDueDate || undefined,
-    });
-    setEditing(false);
-  };
-
   function startEdit() {
     setDraftText(item.text);
     setDraftLink(item.link ?? "");
@@ -207,6 +191,24 @@ function TodoTableRow({
     setDraftDueDate(item.dueDate ?? "");
     setEditing(false);
   }
+
+  // Kept in sync after every render so setTimeout callbacks always see fresh state
+  useEffect(() => {
+    commitRef.current = () => {
+      const text = draftText.trim();
+      if (!text) {
+        revert();
+        return;
+      }
+      onUpdate({
+        text,
+        link: draftLink.trim() || undefined,
+        tagIds: draftTagIds,
+        dueDate: draftDueDate || undefined,
+      });
+      setEditing(false);
+    };
+  });
 
   function commitEdit() {
     const text = draftText.trim();
