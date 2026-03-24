@@ -22,7 +22,7 @@ export function ScoreCard({ done, total, score }: Props) {
 
         <div
           className={cn(
-            "font-mono text-[64px] font-bold leading-none my-2",
+            "font-mono text-5xl sm:text-[64px] font-bold leading-none my-2",
             isHigh ? "text-chart-1" : "text-primary",
           )}
         >

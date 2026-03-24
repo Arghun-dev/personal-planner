@@ -16,7 +16,7 @@ export function GymTracker({ gymDays, gymCount, todayIdx, onToggle }: Props) {
 
   return (
     <Card className="mb-4 rounded-[4px] gap-0">
-      <CardContent className="p-5">
+      <CardContent className="p-4 sm:p-5">
         <div className="flex items-baseline gap-2">
           <span className="font-mono text-[22px] font-bold text-destructive">
             {gymCount}

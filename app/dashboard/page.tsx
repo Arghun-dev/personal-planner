@@ -126,8 +126,8 @@ function ChartCard({
         </CardTitle>
       </CardHeader>
       <CardContent
-        className="px-5 pb-3"
-        style={height === "auto" ? undefined : { height }}
+        className="px-5 pb-3 min-w-0"
+        style={height === "auto" ? { minHeight: 60 } : { height }}
       >
         {children}
       </CardContent>
@@ -407,7 +407,7 @@ export default function DashboardPage() {
         {/* Score Trend */}
         <ChartCard title="Score Trend" height={260} className="mb-4">
           {dataHydrated ? (
-            <ResponsiveContainer width="100%" height="100%">
+            <ResponsiveContainer width="100%" height="100%" minHeight={0}>
               <LineChart
                 data={scoreTrendData}
                 margin={{ top: 8, right: 16, bottom: 0, left: 0 }}
@@ -476,7 +476,7 @@ export default function DashboardPage() {
         <div className="grid grid-cols-1 lg:grid-cols-[3fr_2fr] gap-4 mb-4">
           <ChartCard title="Sleep Quality" height={240}>
             {dataHydrated ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minHeight={0}>
                 <BarChart
                   data={sleepChartData}
                   margin={{ top: 8, right: 16, bottom: 0, left: 0 }}
@@ -525,7 +525,7 @@ export default function DashboardPage() {
 
           <ChartCard title="Day Status Distribution" height={240}>
             {dataHydrated && statusTotal > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minHeight={0}>
                 <PieChart>
                   <Pie
                     data={statusData}
@@ -571,7 +571,7 @@ export default function DashboardPage() {
             }
           >
             {dataHydrated && protocolData.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minHeight={0}>
                 <BarChart
                   data={protocolData}
                   layout="vertical"
@@ -612,7 +612,7 @@ export default function DashboardPage() {
 
           <ChartCard title="Gym Sessions per Week" height={220}>
             {dataHydrated ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer width="100%" height="100%" minHeight={0}>
                 <BarChart
                   data={gymChartData}
                   margin={{ top: 8, right: 16, bottom: 0, left: 0 }}

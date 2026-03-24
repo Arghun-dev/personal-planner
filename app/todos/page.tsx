@@ -550,7 +550,7 @@ export default function TodosPage() {
         badHabitStreak={badHabitStreak}
       />
 
-      <main className="max-w-275 mx-auto px-8 py-8">
+      <main className="max-w-275 mx-auto px-4 sm:px-8 py-4 sm:py-8">
         <div className="flex items-center justify-between mb-4">
           <div>
             <h1 className="text-xl font-semibold">All Tasks</h1>
@@ -749,45 +749,129 @@ export default function TodosPage() {
             No tasks match the current filters.
           </div>
         ) : (
-          <div className="rounded-xl ring-1 ring-foreground/10 bg-card overflow-visible">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/40">
-                  <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground w-24">
-                    Status
-                  </th>
-                  <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
-                    Task
-                  </th>
-                  <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground w-52">
-                    Tags
-                  </th>
-                  <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground w-52">
-                    Link
-                  </th>
-                  <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground w-28">
-                    Due Date
-                  </th>
-                  <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground w-28">
-                    Added
-                  </th>
-                  <th className="w-16" />
-                </tr>
-              </thead>
-              <tbody>
-                {sorted.map((item) => (
-                  <TodoTableRow
+          <>
+            {/* ── Mobile card list (< sm) ── */}
+            <div className="flex flex-col gap-2 sm:hidden">
+              {sorted.map((item) => {
+                const overdue = isOverdue(item);
+                const itemTags = todos.tags.filter((t) =>
+                  item.tagIds.includes(t.id),
+                );
+                return (
+                  <div
                     key={item.id}
-                    item={item}
-                    allTags={tags}
-                    onToggle={() => toggleTodoItem(item.id)}
-                    onUpdate={(patch) => updateTodoItem(item.id, patch)}
-                    onDelete={() => deleteTodoItem(item.id)}
-                  />
-                ))}
-              </tbody>
-            </table>
-          </div>
+                    className={cn(
+                      "rounded-xl ring-1 ring-foreground/10 bg-card px-4 py-3 flex flex-col gap-1.5",
+                      overdue && "bg-red-50 ring-red-200",
+                      item.done && "opacity-60",
+                    )}
+                  >
+                    <div className="flex items-start gap-3">
+                      <button
+                        type="button"
+                        onClick={() => toggleTodoItem(item.id)}
+                        className="cursor-pointer mt-0.5 shrink-0"
+                      >
+                        <StatusBadge done={item.done} overdue={overdue} />
+                      </button>
+                      <span
+                        className={cn(
+                          "text-sm leading-snug flex-1",
+                          item.done && "line-through text-muted-foreground",
+                        )}
+                      >
+                        {item.text}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={() => deleteTodoItem(item.id)}
+                        className="cursor-pointer shrink-0 inline-flex items-center justify-center size-7 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+                      >
+                        <Trash2Icon className="size-3.5" />
+                      </button>
+                    </div>
+                    {(itemTags.length > 0 || item.dueDate || item.link) && (
+                      <div className="flex flex-wrap items-center gap-1.5 pl-0 text-[11px]">
+                        {itemTags.map((tag) => (
+                          <TagPill key={tag.id} tag={tag} />
+                        ))}
+                        {item.dueDate && (
+                          <span
+                            className={cn(
+                              "inline-flex items-center gap-1",
+                              overdue
+                                ? "text-red-600 font-semibold"
+                                : "text-muted-foreground",
+                            )}
+                          >
+                            <CalendarIcon className="size-3" />
+                            {formatDueDate(item.dueDate)}
+                          </span>
+                        )}
+                        {item.link && (
+                          <a
+                            href={item.link}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-primary hover:underline truncate max-w-[160px]"
+                          >
+                            <LinkIcon className="size-3 shrink-0" />
+                            {item.link
+                              .replace(/^https?:\/\//, "")
+                              .slice(0, 22)}
+                            {item.link.replace(/^https?:\/\//, "").length > 22
+                              ? "…"
+                              : ""}
+                          </a>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* ── Desktop table (≥ sm) ── */}
+            <div className="hidden sm:block rounded-xl ring-1 ring-foreground/10 bg-card overflow-visible">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-border bg-muted/40">
+                    <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground w-24">
+                      Status
+                    </th>
+                    <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground">
+                      Task
+                    </th>
+                    <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground w-52">
+                      Tags
+                    </th>
+                    <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground w-52">
+                      Link
+                    </th>
+                    <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground w-28">
+                      Due Date
+                    </th>
+                    <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground w-28">
+                      Added
+                    </th>
+                    <th className="w-16" />
+                  </tr>
+                </thead>
+                <tbody>
+                  {sorted.map((item) => (
+                    <TodoTableRow
+                      key={item.id}
+                      item={item}
+                      allTags={tags}
+                      onToggle={() => toggleTodoItem(item.id)}
+                      onUpdate={(patch) => updateTodoItem(item.id, patch)}
+                      onDelete={() => deleteTodoItem(item.id)}
+                    />
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </>
         )}
       </main>
     </div>

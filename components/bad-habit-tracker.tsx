@@ -60,7 +60,7 @@ export function BadHabitTracker({
 
   return (
     <Card className="mb-4 rounded-[4px] gap-0">
-      <CardContent className="p-5">
+      <CardContent className="p-4 sm:p-5">
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
           <div className="flex items-baseline gap-2">

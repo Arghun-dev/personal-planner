@@ -61,7 +61,7 @@ export function SleepTracker({
             <div className="font-mono text-[10px] text-muted-foreground tracking-[0.15em] uppercase">
               Last Night
             </div>
-            <div className="font-mono text-[28px] font-bold text-primary">
+            <div className="font-mono text-[24px] sm:text-[28px] font-bold text-primary">
               {todaySleep != null ? `${todaySleep} hrs` : "— hrs"}
             </div>
           </div>

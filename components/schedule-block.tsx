@@ -98,13 +98,13 @@ export function ScheduleBlock({
           : "",
       )}
     >
-      <div className="flex items-center gap-4 px-4 py-[0.85rem]">
+      <div className="flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 sm:py-[0.85rem]">
         <StatusCheckbox status={status} />
 
         {/* Time */}
         <div
           className={cn(
-            "font-mono text-[11px] min-w-[100px] tracking-[0.05em]",
+            "font-mono text-[10px] sm:text-[11px] min-w-[76px] sm:min-w-[100px] tracking-[0.05em]",
             isDone
               ? "text-dos-green"
               : isActive
@@ -123,7 +123,7 @@ export function ScheduleBlock({
         <div className="flex-1 min-w-0">
           <div
             className={cn(
-              "font-sans font-bold text-[17px] tracking-[0.02em] leading-none mb-[2px]",
+              "font-sans font-bold text-[15px] sm:text-[17px] tracking-[0.02em] leading-none mb-[2px]",
               isActive && "text-dos-amber",
               isPrompting && "text-orange-600 dark:text-orange-400",
             )}

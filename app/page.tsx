@@ -138,7 +138,7 @@ export default function Home() {
         badHabitStreak={badHabitStreak}
       />
 
-      <main className="max-w-[1100px] mx-auto px-8 py-8 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
+      <main className="max-w-[1100px] mx-auto px-4 sm:px-8 py-4 sm:py-8 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
         <div>
           <SectionLabel>today&apos;s protocol</SectionLabel>
 
