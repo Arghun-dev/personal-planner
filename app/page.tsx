@@ -101,6 +101,7 @@ export default function Home() {
     todos,
     badHabits,
     badHabitStreak,
+    badHabitCleanDays,
     dateDisplay,
     toggleTask,
     toggleGym,
@@ -333,6 +334,7 @@ export default function Home() {
             <TodoManager
               items={todos.items}
               tags={todos.tags}
+              todayOnly
               onAddItem={addTodoItem}
               onToggleItem={toggleTodoItem}
               onDeleteItem={deleteTodoItem}
@@ -349,6 +351,15 @@ export default function Home() {
           <SectionLabel>discipline score</SectionLabel>
           <ScoreCard done={doneTasks} total={total} score={score} />
 
+          <SectionLabel>sleep log</SectionLabel>
+          <SleepTracker
+            sleepData={sleepData}
+            todaySleep={todaySleep}
+            todaySleepEntry={todaySleepEntry}
+            plannedWakeTime={plannedWakeTime}
+            onOpenModal={() => setSleepModalOpen(true)}
+          />
+
           <SectionLabel>consistency streak</SectionLabel>
           <StreakCard streak={streak} />
 
@@ -364,16 +375,8 @@ export default function Home() {
           <BadHabitTracker
             badHabits={badHabits}
             badHabitStreak={badHabitStreak}
+            badHabitCleanDays={badHabitCleanDays}
             onToggle={toggleBadHabitClean}
-          />
-
-          <SectionLabel>sleep log</SectionLabel>
-          <SleepTracker
-            sleepData={sleepData}
-            todaySleep={todaySleep}
-            todaySleepEntry={todaySleepEntry}
-            plannedWakeTime={plannedWakeTime}
-            onOpenModal={() => setSleepModalOpen(true)}
           />
         </div>
       </main>

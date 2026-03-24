@@ -21,6 +21,8 @@ export interface TodoItem {
   tagIds: string[];
   createdAt: number;
   link?: string;
+  /** ISO date "YYYY-MM-DD". Optional — only set when user picks a due date. */
+  dueDate?: string;
 }
 
 export interface TodoState {

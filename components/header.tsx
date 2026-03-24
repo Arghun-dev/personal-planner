@@ -75,6 +75,16 @@ export function Header({
           >
             All Tasks
           </Link>
+          <Link
+            href="/dashboard"
+            className={`text-[11px] font-semibold px-3 py-1 rounded-md transition-colors ${
+              pathname === "/dashboard"
+                ? "bg-primary/10 text-primary"
+                : "text-muted-foreground hover:text-foreground hover:bg-muted"
+            }`}
+          >
+            Dashboard
+          </Link>
         </nav>
       </div>
 

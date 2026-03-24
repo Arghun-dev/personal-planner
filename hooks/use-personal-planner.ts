@@ -122,24 +122,25 @@ function isPastBlock(start: number, end: number): boolean {
   return h >= end;
 }
 
-function computeBadHabitStreak(state: AppState): number {
-  // Count consecutive clean weeks going backwards from current week
-  let streak = 0;
-  const monday = new Date();
-  const dow = monday.getDay() || 7;
-  monday.setDate(monday.getDate() - dow + 1);
-  monday.setHours(0, 0, 0, 0);
-  for (let i = 0; i < 104; i++) {
-    const wkStart = new Date(monday);
-    wkStart.setDate(monday.getDate() - i * 7);
-    const key = `${wkStart.getFullYear()}-${wkStart.getMonth() + 1}-${wkStart.getDate()}`;
+function computeBadHabitStreak(state: AppState): {
+  streak: number;
+  cleanDays: number;
+} {
+  // Count consecutive clean days going backwards from today
+  let cleanDays = 0;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
     if (state.badHabits?.[key]) {
-      streak++;
+      cleanDays++;
     } else {
       break;
     }
   }
-  return streak;
+  return { streak: Math.floor(cleanDays / 7), cleanDays };
 }
 
 function computeStreak(state: AppState): number {
@@ -260,7 +261,8 @@ export function usePersonalPlanner() {
   const notes = state.notes?.[todayKey] ?? "";
   const todos = state.todos ?? { tags: [], items: [] };
   const badHabits = state.badHabits ?? {};
-  const badHabitStreak = computeBadHabitStreak(state);
+  const { streak: badHabitStreak, cleanDays: badHabitCleanDays } =
+    computeBadHabitStreak(state);
 
   const scheduleWithState = SCHEDULE.map((block) => ({
     ...block,
@@ -360,7 +362,7 @@ export function usePersonalPlanner() {
   // ── Todo mutations ──────────────────────────────────────────────────────
 
   const addTodoItem = useCallback(
-    (text: string, tagIds: string[], link?: string) => {
+    (text: string, tagIds: string[], link?: string, dueDate?: string) => {
       setState((prev) => {
         const todos = prev.todos ?? { tags: [], items: [] };
         const item: TodoItem = {
@@ -370,6 +372,7 @@ export function usePersonalPlanner() {
           tagIds,
           createdAt: Date.now(),
           ...(link ? { link } : {}),
+          ...(dueDate ? { dueDate } : {}),
         };
         const next: AppState = {
           ...prev,
@@ -414,7 +417,7 @@ export function usePersonalPlanner() {
   const updateTodoItem = useCallback(
     (
       id: string,
-      patch: Partial<Pick<TodoItem, "text" | "tagIds" | "link">>,
+      patch: Partial<Pick<TodoItem, "text" | "tagIds" | "link" | "dueDate">>,
     ) => {
       setState((prev) => {
         const todos = prev.todos ?? { tags: [], items: [] };
@@ -549,6 +552,7 @@ export function usePersonalPlanner() {
     todos,
     badHabits,
     badHabitStreak,
+    badHabitCleanDays,
     dateDisplay,
     toggleTask,
     toggleGym,

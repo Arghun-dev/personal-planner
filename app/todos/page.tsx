@@ -11,9 +11,16 @@ import {
   Trash2Icon,
   XIcon,
   TagIcon,
-  SaveIcon,
   FilterIcon,
+  PlusIcon,
+  CalendarIcon,
 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import type { TodoItem, TodoTag } from "@/lib/types";
 
 // ── helpers ───────────────────────────────────────────────────────────────
@@ -26,12 +33,37 @@ function formatDate(ts: number) {
   });
 }
 
-function StatusBadge({ done }: { done: boolean }) {
-  return done ? (
-    <span className="inline-flex items-center gap-1 rounded-full bg-green-100 text-green-700 border border-green-200 px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap">
-      <CheckIcon className="size-2.5 stroke-3" /> Done
-    </span>
-  ) : (
+function getTodayISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function formatDueDate(iso: string): string {
+  const [y, m, day] = iso.split("-").map(Number);
+  return new Date(y, m - 1, day).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function isOverdue(item: Pick<TodoItem, "done" | "dueDate">): boolean {
+  return !item.done && !!item.dueDate && item.dueDate < getTodayISO();
+}
+
+function StatusBadge({ done, overdue }: { done: boolean; overdue?: boolean }) {
+  if (done)
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-green-100 text-green-700 border border-green-200 px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap">
+        <CheckIcon className="size-2.5 stroke-3" /> Done
+      </span>
+    );
+  if (overdue)
+    return (
+      <span className="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-700 border border-red-200 px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap">
+        Delayed
+      </span>
+    );
+  return (
     <span className="inline-flex items-center rounded-full bg-gray-100 text-gray-500 border border-gray-200 px-2 py-0.5 text-[11px] font-semibold whitespace-nowrap">
       Open
     </span>
@@ -63,29 +95,18 @@ function TagPill({ tag, onRemove }: { tag: TodoTag; onRemove?: () => void }) {
   );
 }
 
-// ── Inline tag picker dropdown ─────────────────────────────────────────────
+// ── Inline tag picker dropdown ──────────────────────────────────────────────
 function TagPickerDropdown({
   allTags,
   selectedIds,
   onChange,
+  onOpenChange,
 }: {
   allTags: TodoTag[];
   selectedIds: string[];
   onChange: (ids: string[]) => void;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
-  const ref = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    if (!open) return;
-    function onOutside(e: MouseEvent) {
-      if (ref.current?.contains(e.target as Node)) return;
-      setOpen(false);
-    }
-    document.addEventListener("mousedown", onOutside);
-    return () => document.removeEventListener("mousedown", onOutside);
-  }, [open]);
-
   if (allTags.length === 0)
     return (
       <span className="text-muted-foreground/40 text-[11px]">
@@ -94,48 +115,38 @@ function TagPickerDropdown({
     );
 
   return (
-    <div ref={ref} style={{ position: "relative", display: "inline-block" }}>
-      <button
-        type="button"
-        onClick={() => setOpen((o) => !o)}
-        className="cursor-pointer inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground border border-dashed border-border rounded-full px-2 py-0.5 transition-colors"
-      >
-        <TagIcon className="size-2.5" /> Add tag
-      </button>
-      {open && (
-        <div
-          style={{
-            position: "absolute",
-            top: "100%",
-            left: 0,
-            marginTop: 4,
-            zIndex: 9999,
-          }}
-          className="min-w-40 rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 p-1"
+    <Popover onOpenChange={onOpenChange}>
+      <PopoverTrigger asChild>
+        <button
+          type="button"
+          className="cursor-pointer inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground border border-dashed border-border rounded-full px-2 py-0.5 transition-colors"
         >
-          {allTags.map((tag) => {
-            const sel = selectedIds.includes(tag.id);
-            return (
-              <button
-                key={tag.id}
-                type="button"
-                onClick={() =>
-                  onChange(
-                    sel
-                      ? selectedIds.filter((id) => id !== tag.id)
-                      : [...selectedIds, tag.id],
-                  )
-                }
-                className="cursor-pointer flex items-center justify-between gap-2 w-full px-2 py-1.5 rounded-md hover:bg-muted text-left text-sm"
-              >
-                <TagPill tag={tag} />
-                {sel && <CheckIcon className="size-3 text-primary shrink-0" />}
-              </button>
-            );
-          })}
-        </div>
-      )}
-    </div>
+          <TagIcon className="size-2.5" /> Add tag
+        </button>
+      </PopoverTrigger>
+      <PopoverContent align="start" className="w-44 p-1">
+        {allTags.map((tag) => {
+          const sel = selectedIds.includes(tag.id);
+          return (
+            <button
+              key={tag.id}
+              type="button"
+              onClick={() =>
+                onChange(
+                  sel
+                    ? selectedIds.filter((id) => id !== tag.id)
+                    : [...selectedIds, tag.id],
+                )
+              }
+              className="cursor-pointer flex items-center justify-between gap-2 w-full px-2 py-1.5 rounded-md hover:bg-muted text-left text-sm"
+            >
+              <TagPill tag={tag} />
+              {sel && <CheckIcon className="size-3 text-primary shrink-0" />}
+            </button>
+          );
+        })}
+      </PopoverContent>
+    </Popover>
   );
 }
 
@@ -151,7 +162,7 @@ function TodoTableRow({
   allTags: TodoTag[];
   onToggle: () => void;
   onUpdate: (
-    patch: Partial<Pick<TodoItem, "text" | "tagIds" | "link">>,
+    patch: Partial<Pick<TodoItem, "text" | "tagIds" | "link" | "dueDate">>,
   ) => void;
   onDelete: () => void;
 }) {
@@ -159,25 +170,84 @@ function TodoTableRow({
   const [draftText, setDraftText] = useState(item.text);
   const [draftLink, setDraftLink] = useState(item.link ?? "");
   const [draftTagIds, setDraftTagIds] = useState<string[]>(item.tagIds);
+  const [draftDueDate, setDraftDueDate] = useState(item.dueDate ?? "");
   const textRef = useRef<HTMLInputElement>(null);
+  const trRef = useRef<HTMLTableRowElement>(null);
+  const tagPickerOpenRef = useRef(false);
+  const commitRef = useRef<() => void>(() => {});
+
+  // Reassigned every render so setTimeout callbacks always see fresh state
+  commitRef.current = () => {
+    const text = draftText.trim();
+    if (!text) {
+      revert();
+      return;
+    }
+    onUpdate({
+      text,
+      link: draftLink.trim() || undefined,
+      tagIds: draftTagIds,
+      dueDate: draftDueDate || undefined,
+    });
+    setEditing(false);
+  };
 
   function startEdit() {
     setDraftText(item.text);
     setDraftLink(item.link ?? "");
     setDraftTagIds(item.tagIds);
+    setDraftDueDate(item.dueDate ?? "");
     setEditing(true);
   }
 
-  function cancelEdit() {
+  function revert() {
+    setDraftText(item.text);
+    setDraftLink(item.link ?? "");
+    setDraftTagIds(item.tagIds);
+    setDraftDueDate(item.dueDate ?? "");
     setEditing(false);
   }
 
   function commitEdit() {
     const text = draftText.trim();
-    if (!text) return;
-    const link = draftLink.trim() || undefined;
-    onUpdate({ text, link, tagIds: draftTagIds });
+    if (!text) {
+      revert();
+      return;
+    }
+    onUpdate({
+      text,
+      link: draftLink.trim() || undefined,
+      tagIds: draftTagIds,
+      dueDate: draftDueDate || undefined,
+    });
     setEditing(false);
+  }
+
+  function handleRowBlur(e: React.FocusEvent<HTMLTableRowElement>) {
+    // Focus stayed inside the row
+    if (trRef.current?.contains(e.relatedTarget as Node)) return;
+    // Focus moved into an open Radix portal (tag picker dropdown)
+    if (
+      (e.relatedTarget as Element | null)?.closest(
+        "[data-radix-popper-content-wrapper]",
+      )
+    )
+      return;
+    // Tag picker is open — let handleTagPickerOpenChange handle the save
+    if (tagPickerOpenRef.current) return;
+    commitEdit();
+  }
+
+  function handleTagPickerOpenChange(open: boolean) {
+    tagPickerOpenRef.current = open;
+    if (!open) {
+      // Picker just closed — save if focus is now outside the row
+      setTimeout(() => {
+        if (!trRef.current?.contains(document.activeElement)) {
+          commitRef.current();
+        }
+      }, 0);
+    }
   }
 
   useEffect(() => {
@@ -188,7 +258,11 @@ function TodoTableRow({
 
   if (editing) {
     return (
-      <tr className="border-b border-border last:border-0 bg-muted/20">
+      <tr
+        ref={trRef}
+        onBlur={handleRowBlur}
+        className="border-b border-border last:border-0 bg-muted/20"
+      >
         {/* Status */}
         <td className="px-4 py-3">
           <button type="button" onClick={onToggle} className="cursor-pointer">
@@ -204,7 +278,7 @@ function TodoTableRow({
             onChange={(e) => setDraftText(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") commitEdit();
-              if (e.key === "Escape") cancelEdit();
+              if (e.key === "Escape") revert();
             }}
             className="w-full bg-transparent border-b border-primary outline-none text-sm py-0.5"
           />
@@ -228,6 +302,7 @@ function TodoTableRow({
               allTags={allTags}
               selectedIds={draftTagIds}
               onChange={setDraftTagIds}
+              onOpenChange={handleTagPickerOpenChange}
             />
           </div>
         </td>
@@ -240,11 +315,26 @@ function TodoTableRow({
               value={draftLink}
               onChange={(e) => setDraftLink(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") commitEdit();
-                if (e.key === "Escape") cancelEdit();
+                if (e.key === "Escape") revert();
               }}
               placeholder="https://..."
               className="w-full bg-transparent border-b border-border outline-none text-xs py-0.5 placeholder:text-muted-foreground/50"
+            />
+          </div>
+        </td>
+
+        {/* Due Date */}
+        <td className="px-4 py-3">
+          <div className="flex items-center gap-1">
+            <CalendarIcon className="size-3 text-muted-foreground shrink-0" />
+            <input
+              type="date"
+              value={draftDueDate}
+              onChange={(e) => setDraftDueDate(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") revert();
+              }}
+              className="bg-transparent border-b border-border outline-none text-xs py-0.5 w-28 text-foreground"
             />
           </div>
         </td>
@@ -255,35 +345,19 @@ function TodoTableRow({
         </td>
 
         {/* Actions */}
-        <td className="px-4 py-3">
-          <div className="flex items-center gap-1">
-            <button
-              type="button"
-              onClick={commitEdit}
-              disabled={!draftText.trim()}
-              className="cursor-pointer inline-flex items-center justify-center size-6 rounded hover:bg-primary/10 text-primary transition-colors disabled:opacity-40"
-              title="Save"
-            >
-              <SaveIcon className="size-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={cancelEdit}
-              className="cursor-pointer inline-flex items-center justify-center size-6 rounded hover:bg-muted text-muted-foreground transition-colors"
-              title="Cancel"
-            >
-              <XIcon className="size-3.5" />
-            </button>
-          </div>
-        </td>
+        <td className="px-4 py-3" />
       </tr>
     );
   }
 
+  const overdue = isOverdue(item);
   return (
     <tr
       className={cn(
-        "group border-b border-border last:border-0 transition-colors hover:bg-muted/30",
+        "group border-b border-border last:border-0 transition-colors",
+        overdue
+          ? "bg-red-50 hover:bg-red-100/70 dark:bg-red-950/20"
+          : "hover:bg-muted/30",
         item.done && "opacity-60",
       )}
     >
@@ -295,7 +369,7 @@ function TodoTableRow({
           className="cursor-pointer"
           title={item.done ? "Mark open" : "Mark done"}
         >
-          <StatusBadge done={item.done} />
+          <StatusBadge done={item.done} overdue={overdue} />
         </button>
       </td>
 
@@ -337,6 +411,23 @@ function TodoTableRow({
           </a>
         ) : (
           <span className="text-muted-foreground/40 text-[11px]">—</span>
+        )}
+      </td>
+
+      {/* Due Date */}
+      <td className="px-4 py-3 text-[11px] whitespace-nowrap">
+        {item.dueDate ? (
+          <span
+            className={cn(
+              "inline-flex items-center gap-1",
+              overdue ? "text-red-600 font-semibold" : "text-muted-foreground",
+            )}
+          >
+            {overdue && <CalendarIcon className="size-3" />}
+            {formatDueDate(item.dueDate)}
+          </span>
+        ) : (
+          <span className="text-muted-foreground/40">—</span>
         )}
       </td>
 
@@ -383,12 +474,33 @@ export default function TodosPage() {
     toggleTodoItem,
     deleteTodoItem,
     updateTodoItem,
+    addTodoItem,
   } = usePersonalPlanner();
 
   const [statusFilter, setStatusFilter] = useState<"all" | "open" | "done">(
     "all",
   );
   const [tagFilter, setTagFilter] = useState<string | null>(null);
+
+  // New task form state
+  const [newText, setNewText] = useState("");
+  const [newTagIds, setNewTagIds] = useState<string[]>([]);
+  const [newLink, setNewLink] = useState("");
+  const [newDueDate, setNewDueDate] = useState("");
+  const [showNewLink, setShowNewLink] = useState(false);
+
+  function handleAddNewTask() {
+    const text = newText.trim();
+    if (!text) return;
+    const link = newLink.trim() || undefined;
+    const dueDate = newDueDate || undefined;
+    addTodoItem(text, newTagIds, link, dueDate);
+    setNewText("");
+    setNewTagIds([]);
+    setNewLink("");
+    setNewDueDate("");
+    setShowNewLink(false);
+  }
 
   if (!hydrated) return null;
 
@@ -407,6 +519,15 @@ export default function TodosPage() {
 
   const sorted = [...filtered].sort((a, b) => {
     if (a.done !== b.done) return a.done ? 1 : -1;
+    // Among open tasks: overdue first, then tasks with due dates (earliest first)
+    if (!a.done) {
+      const ao = isOverdue(a),
+        bo = isOverdue(b);
+      if (ao !== bo) return ao ? -1 : 1;
+      if (a.dueDate && b.dueDate) return a.dueDate.localeCompare(b.dueDate);
+      if (a.dueDate && !b.dueDate) return -1;
+      if (!a.dueDate && b.dueDate) return 1;
+    }
     return b.createdAt - a.createdAt;
   });
 
@@ -441,6 +562,119 @@ export default function TodosPage() {
               )}
             </p>
           </div>
+        </div>
+
+        {/* ── Add task form ── */}
+        <div className="rounded-xl ring-1 ring-foreground/10 bg-card mb-4 overflow-hidden">
+          <div className="flex items-center gap-2 px-4 py-3">
+            <PlusIcon className="size-3.5 text-muted-foreground shrink-0" />
+            <input
+              value={newText}
+              onChange={(e) => setNewText(e.target.value)}
+              onKeyDown={(e) => e.key === "Enter" && handleAddNewTask()}
+              placeholder="Add a task..."
+              className="flex-1 bg-transparent outline-none text-sm placeholder:text-muted-foreground/60 min-w-0"
+            />
+            <div className="relative shrink-0" title="Set due date">
+              <button
+                type="button"
+                className={cn(
+                  "cursor-pointer inline-flex items-center justify-center size-7 rounded hover:bg-muted transition-colors",
+                  newDueDate
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-foreground",
+                )}
+                aria-label={
+                  newDueDate
+                    ? `Due: ${formatDueDate(newDueDate)}`
+                    : "Set due date"
+                }
+              >
+                <CalendarIcon className="size-3.5" />
+              </button>
+              <input
+                type="date"
+                value={newDueDate}
+                onChange={(e) => setNewDueDate(e.target.value)}
+                className="absolute inset-0 w-full opacity-0 cursor-pointer"
+                aria-label="Due date"
+              />
+            </div>
+            <button
+              type="button"
+              onClick={() => setShowNewLink((v) => !v)}
+              className={cn(
+                "cursor-pointer inline-flex items-center justify-center size-7 rounded hover:bg-muted transition-colors shrink-0",
+                showNewLink || newLink
+                  ? "text-primary"
+                  : "text-muted-foreground hover:text-foreground",
+              )}
+              title="Add link"
+            >
+              <LinkIcon className="size-3.5" />
+            </button>
+            {tags.length > 0 && (
+              <TagPickerDropdown
+                allTags={tags}
+                selectedIds={newTagIds}
+                onChange={setNewTagIds}
+              />
+            )}
+            <Button
+              size="sm"
+              onClick={handleAddNewTask}
+              disabled={!newText.trim()}
+              className="h-7 px-3 text-xs shrink-0"
+            >
+              Add
+            </Button>
+          </div>
+          {(newTagIds.length > 0 || showNewLink || newDueDate) && (
+            <div className="flex flex-wrap items-center gap-3 px-4 py-2 bg-muted/20 border-t border-border text-xs">
+              {showNewLink && (
+                <div className="flex items-center gap-1.5 flex-1 min-w-0">
+                  <LinkIcon className="size-3 text-muted-foreground shrink-0" />
+                  <input
+                    value={newLink}
+                    onChange={(e) => setNewLink(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && handleAddNewTask()}
+                    placeholder="https://..."
+                    className="flex-1 bg-transparent outline-none placeholder:text-muted-foreground/50 min-w-0"
+                  />
+                </div>
+              )}
+              {newDueDate && (
+                <span className="inline-flex items-center gap-1 text-muted-foreground">
+                  <CalendarIcon className="size-3" />
+                  Due {formatDueDate(newDueDate)}
+                  <button
+                    type="button"
+                    onClick={() => setNewDueDate("")}
+                    className="cursor-pointer hover:text-foreground leading-none ml-0.5"
+                  >
+                    <XIcon className="size-2.5" />
+                  </button>
+                </span>
+              )}
+              {newTagIds.length > 0 && (
+                <div className="flex items-center gap-1 flex-wrap">
+                  {newTagIds.map((tid) => {
+                    const tag = tags.find((t) => t.id === tid);
+                    if (!tag) return null;
+                    return (
+                      <TagPill
+                        key={tid}
+                        tag={tag}
+                        onRemove={() =>
+                          setNewTagIds((ids) => ids.filter((id) => id !== tid))
+                        }
+                      />
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
         {/* ── Filter bar ── */}
@@ -528,6 +762,9 @@ export default function TodosPage() {
                   </th>
                   <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground w-52">
                     Link
+                  </th>
+                  <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground w-28">
+                    Due Date
                   </th>
                   <th className="text-left px-4 py-2.5 text-[11px] font-semibold uppercase tracking-widest text-muted-foreground w-28">
                     Added

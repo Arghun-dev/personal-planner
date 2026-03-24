@@ -17,8 +17,22 @@ import {
   Trash2Icon,
   XIcon,
   LinkIcon,
-  SaveIcon,
+  CalendarIcon,
 } from "lucide-react";
+
+// ── Due date helpers ──────────────────────────────────────────────────────
+function getTodayISO(): string {
+  const d = new Date();
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+}
+
+function formatDueDate(iso: string): string {
+  const [y, m, day] = iso.split("-").map(Number);
+  return new Date(y, m - 1, day).toLocaleDateString(undefined, {
+    month: "short",
+    day: "numeric",
+  });
+}
 
 // ── Colour palette for tags ────────────────────────────────────────────────
 const TAG_COLORS = [
@@ -339,7 +353,7 @@ function TodoRow({
   onToggle: () => void;
   onDelete: () => void;
   onUpdate: (
-    patch: Partial<Pick<TodoItem, "text" | "tagIds" | "link">>,
+    patch: Partial<Pick<TodoItem, "text" | "tagIds" | "link" | "dueDate">>,
   ) => void;
   dragHandlers?: {
     onDragStart: () => void;
@@ -352,25 +366,41 @@ function TodoRow({
   const [draftText, setDraftText] = useState(item.text);
   const [draftLink, setDraftLink] = useState(item.link ?? "");
   const [draftTagIds, setDraftTagIds] = useState<string[]>(item.tagIds);
+  const [draftDueDate, setDraftDueDate] = useState(item.dueDate ?? "");
   const inputRef = useRef<HTMLInputElement>(null);
+  const containerRef = useRef<HTMLDivElement>(null);
 
   function startEdit() {
     setDraftText(item.text);
     setDraftLink(item.link ?? "");
     setDraftTagIds(item.tagIds);
+    setDraftDueDate(item.dueDate ?? "");
     setEditing(true);
   }
 
-  function cancelEdit() {
+  function revert() {
+    setDraftText(item.text);
+    setDraftLink(item.link ?? "");
+    setDraftTagIds(item.tagIds);
+    setDraftDueDate(item.dueDate ?? "");
     setEditing(false);
   }
 
   function commitEdit() {
     const text = draftText.trim();
-    if (!text) return;
+    if (!text) {
+      revert();
+      return;
+    }
     const link = draftLink.trim() || undefined;
-    onUpdate({ text, link, tagIds: draftTagIds });
+    const dueDate = draftDueDate || undefined;
+    onUpdate({ text, link, tagIds: draftTagIds, dueDate });
     setEditing(false);
+  }
+
+  function handleContainerBlur(e: React.FocusEvent<HTMLDivElement>) {
+    if (containerRef.current?.contains(e.relatedTarget as Node)) return;
+    commitEdit();
   }
 
   useEffect(() => {
@@ -381,7 +411,11 @@ function TodoRow({
 
   if (editing) {
     return (
-      <div className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-muted/30">
+      <div
+        ref={containerRef}
+        onBlur={handleContainerBlur}
+        className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-muted/30"
+      >
         {/* Checkbox */}
         <button
           type="button"
@@ -404,7 +438,7 @@ function TodoRow({
             onChange={(e) => setDraftText(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter") commitEdit();
-              if (e.key === "Escape") cancelEdit();
+              if (e.key === "Escape") revert();
             }}
             className="w-full bg-transparent outline-none text-sm border-b border-primary py-0.5"
           />
@@ -414,11 +448,22 @@ function TodoRow({
               value={draftLink}
               onChange={(e) => setDraftLink(e.target.value)}
               onKeyDown={(e) => {
-                if (e.key === "Enter") commitEdit();
-                if (e.key === "Escape") cancelEdit();
+                if (e.key === "Escape") revert();
               }}
               placeholder="https://..."
               className="flex-1 bg-transparent outline-none text-xs border-b border-border py-0.5 placeholder:text-muted-foreground/50"
+            />
+          </div>
+          <div className="flex items-center gap-1">
+            <CalendarIcon className="size-3 text-muted-foreground shrink-0" />
+            <input
+              type="date"
+              value={draftDueDate}
+              onChange={(e) => setDraftDueDate(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Escape") revert();
+              }}
+              className="flex-1 bg-transparent outline-none text-xs border-b border-border py-0.5 text-foreground"
             />
           </div>
           <div className="flex flex-wrap items-center gap-1">
@@ -428,9 +473,10 @@ function TodoRow({
                 <TagPill
                   key={tag.id}
                   tag={tag}
-                  onRemove={() =>
-                    setDraftTagIds((ids) => ids.filter((id) => id !== tag.id))
-                  }
+                  onRemove={() => {
+                    setDraftTagIds((ids) => ids.filter((id) => id !== tag.id));
+                    inputRef.current?.focus();
+                  }}
                 />
               ))}
             <Dropdown
@@ -455,25 +501,6 @@ function TodoRow({
                 }
               />
             </Dropdown>
-          </div>
-          <div className="flex items-center gap-1 pt-0.5">
-            <button
-              type="button"
-              onClick={commitEdit}
-              disabled={!draftText.trim()}
-              className="cursor-pointer inline-flex items-center justify-center size-6 rounded hover:bg-primary/10 text-primary transition-colors disabled:opacity-40"
-              title="Save"
-            >
-              <SaveIcon className="size-3.5" />
-            </button>
-            <button
-              type="button"
-              onClick={cancelEdit}
-              className="cursor-pointer inline-flex items-center justify-center size-6 rounded hover:bg-muted text-muted-foreground transition-colors"
-              title="Cancel"
-            >
-              <XIcon className="size-3.5" />
-            </button>
           </div>
         </div>
       </div>
@@ -532,7 +559,24 @@ function TodoRow({
             {item.link.replace(/^https?:\/\//, "").length > 40 ? "…" : ""}
           </a>
         )}
-
+        {item.dueDate &&
+          (() => {
+            const overdue = !item.done && item.dueDate < getTodayISO();
+            return (
+              <div
+                className={cn(
+                  "inline-flex items-center gap-1 mt-1 text-[10px] font-mono",
+                  overdue
+                    ? "text-red-600 font-semibold"
+                    : "text-muted-foreground",
+                )}
+              >
+                <CalendarIcon className="size-2.5" />
+                {formatDueDate(item.dueDate)}
+                {overdue && " \u00b7 Overdue"}
+              </div>
+            );
+          })()}
         {itemTags.length > 0 && (
           <div className="flex flex-wrap gap-1 mt-1.5">
             {itemTags.map((tag) => (
@@ -569,12 +613,19 @@ function TodoRow({
 interface Props {
   items: TodoItem[];
   tags: TodoTag[];
-  onAddItem: (text: string, tagIds: string[], link?: string) => void;
+  /** When true: only shows tasks due today, new tasks auto-get today as dueDate */
+  todayOnly?: boolean;
+  onAddItem: (
+    text: string,
+    tagIds: string[],
+    link?: string,
+    dueDate?: string,
+  ) => void;
   onToggleItem: (id: string) => void;
   onDeleteItem: (id: string) => void;
   onUpdateItem: (
     id: string,
-    patch: Partial<Pick<TodoItem, "text" | "tagIds" | "link">>,
+    patch: Partial<Pick<TodoItem, "text" | "tagIds" | "link" | "dueDate">>,
   ) => void;
   onReorderItems: (fromId: string, toId: string) => void;
   onAddTag: (name: string, color: string) => void;
@@ -588,6 +639,7 @@ interface Props {
 export function TodoManager({
   items,
   tags,
+  todayOnly = false,
   onAddItem,
   onToggleItem,
   onDeleteItem,
@@ -600,32 +652,43 @@ export function TodoManager({
   const [newText, setNewText] = useState("");
   const [newTagIds, setNewTagIds] = useState<string[]>([]);
   const [newLink, setNewLink] = useState("");
+  const [newDueDate, setNewDueDate] = useState("");
   const [showLinkInput, setShowLinkInput] = useState(false);
   const [activeFilter, setActiveFilter] = useState<string | null>(null);
   const [dragId, setDragId] = useState<string | null>(null);
   const [overId, setOverId] = useState<string | null>(null);
 
+  const today = getTodayISO();
+
+  // In today-only mode show only tasks explicitly due today
+  const visibleItems = todayOnly
+    ? items.filter((it) => it.dueDate === today)
+    : items;
+
   function handleAdd() {
     const text = newText.trim();
     if (!text) return;
     const link = newLink.trim();
-    onAddItem(text, newTagIds, link || undefined);
+    // In today-only mode always use today; otherwise use whatever was picked
+    const dueDate = todayOnly ? today : newDueDate || undefined;
+    onAddItem(text, newTagIds, link || undefined, dueDate);
     setNewText("");
     setNewTagIds([]);
     setNewLink("");
+    setNewDueDate("");
     setShowLinkInput(false);
   }
 
   const filtered = activeFilter
-    ? items.filter((it) => it.tagIds.includes(activeFilter))
-    : items;
+    ? visibleItems.filter((it) => it.tagIds.includes(activeFilter))
+    : visibleItems;
 
   const sorted = [
     ...filtered.filter((it) => !it.done),
     ...filtered.filter((it) => it.done),
   ];
 
-  const openCount = items.filter((it) => !it.done).length;
+  const openCount = visibleItems.filter((it) => !it.done).length;
 
   return (
     <Card className="rounded-xl gap-0 overflow-visible">
@@ -699,7 +762,10 @@ export function TodoManager({
                 >
                   {tag.name}
                   <span className="text-[9px] opacity-70">
-                    {items.filter((it) => it.tagIds.includes(tag.id)).length}
+                    {
+                      visibleItems.filter((it) => it.tagIds.includes(tag.id))
+                        .length
+                    }
                   </span>
                 </button>
               ))}
@@ -751,6 +817,35 @@ export function TodoManager({
             >
               <LinkIcon className="size-3.5" />
             </button>
+
+            <div className="relative shrink-0" title="Set due date">
+              <button
+                type="button"
+                className={cn(
+                  "cursor-pointer inline-flex items-center justify-center size-7 rounded hover:bg-muted transition-colors",
+                  newDueDate
+                    ? "text-primary"
+                    : "text-muted-foreground hover:text-foreground",
+                  todayOnly && "hidden",
+                )}
+                aria-label={
+                  newDueDate
+                    ? `Due: ${formatDueDate(newDueDate)}`
+                    : "Set due date"
+                }
+              >
+                <CalendarIcon className="size-3.5" />
+              </button>
+              {!todayOnly && (
+                <input
+                  type="date"
+                  value={newDueDate}
+                  onChange={(e) => setNewDueDate(e.target.value)}
+                  className="absolute inset-0 w-full opacity-0 cursor-pointer"
+                  aria-label="Due date"
+                />
+              )}
+            </div>
 
             {tags.length > 0 && (
               <Dropdown
@@ -810,7 +905,9 @@ export function TodoManager({
             <p className="text-center text-[12px] text-muted-foreground/60 py-8">
               {activeFilter
                 ? "No tasks with this tag."
-                : "No tasks yet. Add one above."}
+                : todayOnly
+                  ? "No tasks for today. Add one above."
+                  : "No tasks yet. Add one above."}
             </p>
           ) : (
             sorted.map((item) => (

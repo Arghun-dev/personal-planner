@@ -4,52 +4,41 @@ import { cn } from "@/lib/utils";
 import { Card, CardContent } from "@/components/ui/card";
 import { Progress } from "@/components/ui/progress";
 
-/** Returns the Monday ISO date string for the week containing the given date */
-function getWeekKey(date: Date): string {
-  const d = new Date(date);
-  const dow = d.getDay() || 7; // Sun=7
-  d.setDate(d.getDate() - dow + 1);
-  d.setHours(0, 0, 0, 0);
-  return `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
-}
-
-/** Short label like "Mar 10" for a weekKey "2026-3-10" */
-function weekLabel(key: string): string {
-  const [y, m, d] = key.split("-").map(Number);
-  const date = new Date(y, m - 1, d);
-  return date.toLocaleDateString(undefined, { month: "short", day: "numeric" });
-}
+const DOW_SHORT = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 interface Props {
   badHabits: Record<string, boolean>;
   badHabitStreak: number;
-  onToggle: (weekKey: string) => void;
+  badHabitCleanDays: number;
+  onToggle: (dayKey: string) => void;
 }
-
-const TARGET_WEEKS = 4; // visual target on the progress bar (4 weeks = 1 month)
 
 export function BadHabitTracker({
   badHabits,
   badHabitStreak,
+  badHabitCleanDays,
   onToggle,
 }: Props) {
-  // Build last 8 weeks (most recent last)
-  const weeks: { key: string; label: string; isCurrent: boolean }[] = [];
+  // Build last 14 days (oldest first)
   const today = new Date();
-  const currentWeekKey = getWeekKey(today);
+  today.setHours(0, 0, 0, 0);
+  const todayKey = `${today.getFullYear()}-${today.getMonth() + 1}-${today.getDate()}`;
 
-  for (let i = 7; i >= 0; i--) {
+  const days = Array.from({ length: 14 }, (_, i) => {
     const d = new Date(today);
-    d.setDate(today.getDate() - i * 7);
-    const key = getWeekKey(d);
-    weeks.push({
+    d.setDate(today.getDate() - (13 - i));
+    const key = `${d.getFullYear()}-${d.getMonth() + 1}-${d.getDate()}`;
+    return {
       key,
-      label: weekLabel(key),
-      isCurrent: key === currentWeekKey,
-    });
-  }
+      dayNum: d.getDate(),
+      dow: DOW_SHORT[d.getDay()],
+      isToday: key === todayKey,
+    };
+  });
 
-  const barValue = Math.min((badHabitStreak / TARGET_WEEKS) * 100, 100);
+  // Progress toward next streak: days into the current incomplete group of 7
+  const progressDays = badHabitCleanDays % 7;
+  const barValue = (progressDays / 7) * 100;
 
   const emoji =
     badHabitStreak >= 12
@@ -63,11 +52,11 @@ export function BadHabitTracker({
             : "○";
 
   const subtitle =
-    badHabitStreak === 0
-      ? "Mark this week clean to start your streak"
-      : badHabitStreak === 1
-        ? "1 clean week — keep going!"
-        : `${badHabitStreak} consecutive clean weeks`;
+    badHabitCleanDays === 0
+      ? "Mark today clean to start your streak"
+      : progressDays === 0
+        ? `${badHabitStreak} week${badHabitStreak !== 1 ? "s" : ""} clean — keep going!`
+        : `${progressDays}/7 days toward week ${badHabitStreak + 1}`;
 
   return (
     <Card className="mb-4 rounded-[4px] gap-0">
@@ -79,7 +68,7 @@ export function BadHabitTracker({
               {badHabitStreak}
             </span>
             <span className="text-muted-foreground text-[14px] font-sans">
-              / {TARGET_WEEKS} week target
+              clean week{badHabitStreak !== 1 ? "s" : ""}
             </span>
           </div>
           <span className="text-[24px]">{emoji}</span>
@@ -89,21 +78,21 @@ export function BadHabitTracker({
           {subtitle}
         </div>
 
-        {/* Week grid */}
-        <div className="grid grid-cols-8 gap-[5px] mb-3">
-          {weeks.map(({ key, label, isCurrent }) => {
+        {/* Day grid — 14 days, 7 per row */}
+        <div className="grid grid-cols-7 gap-[5px] mb-3">
+          {days.map(({ key, dayNum, dow, isToday }) => {
             const clean = !!badHabits[key];
             return (
               <button
                 key={key}
                 type="button"
                 onClick={() => onToggle(key)}
-                title={`Week of ${label} — ${clean ? "clean ✓" : "not marked"}`}
+                title={`${dow} ${dayNum} — ${clean ? "clean ✓" : "not marked"}`}
                 className={cn(
                   "flex flex-col items-center gap-0.5 py-1.5 rounded-[2px] border text-center transition-all cursor-pointer",
                   clean
                     ? "bg-primary border-primary text-primary-foreground"
-                    : isCurrent
+                    : isToday
                       ? "border-primary text-muted-foreground hover:bg-primary/10"
                       : "border-border text-muted-foreground/50 hover:border-muted-foreground",
                 )}
@@ -112,7 +101,7 @@ export function BadHabitTracker({
                   {clean ? "✓" : "○"}
                 </span>
                 <span className="font-mono text-[8px] uppercase tracking-tight leading-none opacity-70">
-                  {label.split(" ")[1]}
+                  {dayNum}
                 </span>
               </button>
             );
