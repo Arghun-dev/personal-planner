@@ -16,11 +16,6 @@ import {
   CalendarIcon,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from "@/components/ui/popover";
 import type { TodoItem, TodoTag } from "@/lib/types";
 
 // ── helpers ───────────────────────────────────────────────────────────────
@@ -107,6 +102,26 @@ function TagPickerDropdown({
   onChange: (ids: string[]) => void;
   onOpenChange?: (open: boolean) => void;
 }) {
+  const [open, setOpen] = useState(false);
+  const wrapRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!open) return;
+    function handleOutside(e: MouseEvent) {
+      if (wrapRef.current?.contains(e.target as Node)) return;
+      setOpen(false);
+      onOpenChange?.(false);
+    }
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [open, onOpenChange]);
+
+  function toggle() {
+    const next = !open;
+    setOpen(next);
+    onOpenChange?.(next);
+  }
+
   if (allTags.length === 0)
     return (
       <span className="text-muted-foreground/40 text-[11px]">
@@ -115,38 +130,40 @@ function TagPickerDropdown({
     );
 
   return (
-    <Popover onOpenChange={onOpenChange}>
-      <PopoverTrigger asChild>
-        <button
-          type="button"
-          className="cursor-pointer inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground border border-dashed border-border rounded-full px-2 py-0.5 transition-colors"
-        >
-          <TagIcon className="size-2.5" /> Add tag
-        </button>
-      </PopoverTrigger>
-      <PopoverContent align="start" className="w-44 p-1">
-        {allTags.map((tag) => {
-          const sel = selectedIds.includes(tag.id);
-          return (
-            <button
-              key={tag.id}
-              type="button"
-              onClick={() =>
-                onChange(
-                  sel
-                    ? selectedIds.filter((id) => id !== tag.id)
-                    : [...selectedIds, tag.id],
-                )
-              }
-              className="cursor-pointer flex items-center justify-between gap-2 w-full px-2 py-1.5 rounded-md hover:bg-muted text-left text-sm"
-            >
-              <TagPill tag={tag} />
-              {sel && <CheckIcon className="size-3 text-primary shrink-0" />}
-            </button>
-          );
-        })}
-      </PopoverContent>
-    </Popover>
+    <div ref={wrapRef} className="relative shrink-0">
+      <button
+        type="button"
+        onClick={toggle}
+        className="cursor-pointer inline-flex items-center gap-1 text-[11px] text-muted-foreground hover:text-foreground border border-dashed border-border rounded-full px-2 py-0.5 transition-colors"
+      >
+        <TagIcon className="size-2.5" /> Add tag
+      </button>
+      {open && (
+        <div className="absolute left-0 top-full mt-1 z-50 w-44 rounded-lg bg-popover text-popover-foreground shadow-md ring-1 ring-foreground/10 p-1">
+          {allTags.map((tag) => {
+            const sel = selectedIds.includes(tag.id);
+            return (
+              <button
+                key={tag.id}
+                type="button"
+                onMouseDown={(e) => {
+                  e.preventDefault();
+                  onChange(
+                    sel
+                      ? selectedIds.filter((id) => id !== tag.id)
+                      : [...selectedIds, tag.id],
+                  );
+                }}
+                className="cursor-pointer flex items-center justify-between gap-2 w-full px-2 py-1.5 rounded-md hover:bg-muted text-left text-sm"
+              >
+                <TagPill tag={tag} />
+                {sel && <CheckIcon className="size-3 text-primary shrink-0" />}
+              </button>
+            );
+          })}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -567,7 +584,7 @@ export default function TodosPage() {
         </div>
 
         {/* ── Add task form ── */}
-        <div className="rounded-xl ring-1 ring-foreground/10 bg-card mb-4 overflow-hidden">
+        <div className="rounded-xl ring-1 ring-foreground/10 bg-card mb-4">
           <div className="flex items-center gap-2 px-4 py-3">
             <PlusIcon className="size-3.5 text-muted-foreground shrink-0" />
             <input
@@ -816,9 +833,7 @@ export default function TodosPage() {
                             className="inline-flex items-center gap-1 text-primary hover:underline truncate max-w-[160px]"
                           >
                             <LinkIcon className="size-3 shrink-0" />
-                            {item.link
-                              .replace(/^https?:\/\//, "")
-                              .slice(0, 22)}
+                            {item.link.replace(/^https?:\/\//, "").slice(0, 22)}
                             {item.link.replace(/^https?:\/\//, "").length > 22
                               ? "…"
                               : ""}

@@ -12,7 +12,12 @@ interface StatChipProps {
   className?: string;
 }
 
-function StatChip({ label, value, variant = "default", className }: StatChipProps) {
+function StatChip({
+  label,
+  value,
+  variant = "default",
+  className,
+}: StatChipProps) {
   return (
     <div className={`flex flex-col items-end gap-0.5 ${className ?? ""}`}>
       <span className="font-mono text-[9px] tracking-[0.2em] text-muted-foreground uppercase">
@@ -93,7 +98,12 @@ export function Header({
         <div className="flex gap-3 sm:gap-8 items-center shrink-0">
           <StatChip label="Streak" value={String(streak)} />
           <StatChip label="Today" value={`${score}%`} />
-          <StatChip label="Gym" value={`${gymCount}/5`} variant="secondary" className="hidden sm:flex" />
+          <StatChip
+            label="Gym"
+            value={`${gymCount}/5`}
+            variant="secondary"
+            className="hidden sm:flex"
+          />
           <StatChip
             label="Habits"
             value={`${badHabitStreak}w`}

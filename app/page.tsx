@@ -164,8 +164,16 @@ export default function Home() {
                 gymDays[String(todayWeekIdx)] === "skipped";
 
               return scheduleWithState.map((block, blockIdx) => {
+                // Tags that belong to this block. For the growth block, also
+                // include the study-specific tags: AI, Product, Startup.
+                const GROWTH_EXTRA = ["ai", "product", "startup"];
                 const blockTagIds = todos.tags
-                  .filter((t) => t.name.toLowerCase() === block.tag)
+                  .filter(
+                    (t) =>
+                      t.name.toLowerCase() === block.tag ||
+                      (block.tag === "growth" &&
+                        GROWTH_EXTRA.includes(t.name.toLowerCase())),
+                  )
                   .map((t) => t.id);
                 const blockTasks = todos.items.filter((it) =>
                   it.tagIds.some((tid) => blockTagIds.includes(tid)),
@@ -304,16 +312,18 @@ export default function Home() {
                       nowTime={effectiveActive ? nowLabel : undefined}
                       onToggle={() => toggleTask(block.id)}
                     />
-                    {status === "active" && block.tag === "gym" && !isTodayGymSkipped && (
-                      <button
-                        type="button"
-                        onClick={() => toggleGym(todayWeekIdx)}
-                        className="w-full flex items-center gap-2 px-4 py-2 text-[11px] font-mono text-destructive hover:bg-destructive/10 border border-destructive/30 rounded-[4px] mt-1 transition-colors"
-                      >
-                        <XIcon className="size-3 shrink-0" />
-                        SKIP SESSION
-                      </button>
-                    )}
+                    {status === "active" &&
+                      block.tag === "gym" &&
+                      !isTodayGymSkipped && (
+                        <button
+                          type="button"
+                          onClick={() => toggleGym(todayWeekIdx)}
+                          className="w-full flex items-center gap-2 px-4 py-2 text-[11px] font-mono text-destructive hover:bg-destructive/10 border border-destructive/30 rounded-[4px] mt-1 transition-colors"
+                        >
+                          <XIcon className="size-3 shrink-0" />
+                          SKIP SESSION
+                        </button>
+                      )}
                     {hasSubItems && (
                       <div className="ml-4 pl-3 border-l-2 border-border/50 mt-0.5 space-y-0">
                         {hasWakeRow && (

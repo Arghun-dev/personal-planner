@@ -31,6 +31,7 @@ export interface DashboardData {
   avgScore: number;
   avgSleep: number;
   totalGymSessions: number;
+  gymStreak: number;
   badHabitStreak: number;
   trackedDays: number;
   statusCounts: { done: number; partial: number; failed: number };
@@ -207,7 +208,7 @@ function computeDashboardData(
   const trackedDays = days.filter(
     (d) => d.doneTasks > 0 || d.sleepHrs > 0,
   ).length;
-  const scoredDays = days.filter((d) => d.totalTasks > 0);
+  const scoredDays = days.filter((d) => d.doneTasks > 0 || d.sleepHrs > 0);
   const avgScore =
     scoredDays.length > 0
       ? Math.round(
@@ -223,6 +224,24 @@ function computeDashboardData(
         ) / 10
       : 0;
   const totalGymSessions = gymWeeks.reduce((s, w) => s + w.count, 0);
+
+  // Gym streak: consecutive weeks (going back from current) with ≥ 1 session
+  function computeGymStreak(): number {
+    let streak = 0;
+    const today = new Date();
+    // Start from i=1 (last completed week); current week is always in progress
+    for (let i = 1; i < 104; i++) {
+      const ref = new Date(today);
+      ref.setDate(today.getDate() - i * 7);
+      const wk = getWeekKey(ref);
+      const gymData = state.gym?.[wk] ?? {};
+      const count = Object.values(gymData).filter((v) => v === true).length;
+      if (count >= 1) streak++;
+      else break;
+    }
+    return streak;
+  }
+  const gymStreak = computeGymStreak();
 
   // Status distribution: great ≥80%, ok 40-79%, missed <40%
   const statusCounts = { done: 0, partial: 0, failed: 0 };
@@ -254,6 +273,7 @@ function computeDashboardData(
     avgScore,
     avgSleep,
     totalGymSessions,
+    gymStreak,
     badHabitStreak: computeBadHabitStreak(state),
     trackedDays,
     statusCounts,

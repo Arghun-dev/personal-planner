@@ -31,17 +31,20 @@ export function GymTracker({ gymDays, gymCount, todayIdx, onToggle }: Props) {
             const val = gymDays[String(i)];
             const done = val === true;
             const skipped = val === "skipped";
+            const isFuture = i > todayIdx;
             return (
               <Button
                 key={day}
                 type="button"
                 variant={done ? "destructive" : "outline"}
                 size="icon"
-                onClick={() => onToggle(i)}
+                onClick={() => !isFuture && onToggle(i)}
+                disabled={isFuture}
                 className={cn(
                   "h-auto aspect-square flex-col gap-0 py-2 rounded-[2px] font-normal",
                   i === todayIdx && !done && !skipped && "border-primary",
                   skipped && "border-destructive text-destructive",
+                  isFuture && "opacity-30 cursor-not-allowed",
                 )}
               >
                 <div className="text-[14px] mb-[1px] leading-none">

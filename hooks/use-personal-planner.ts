@@ -43,6 +43,21 @@ const BUILT_IN_TAGS: TodoTag[] = [
     name: "other",
     color: "bg-gray-100 text-gray-600 border-gray-200",
   },
+  {
+    id: "builtin-ai",
+    name: "AI",
+    color: "bg-sky-100 text-sky-700 border-sky-200",
+  },
+  {
+    id: "builtin-product",
+    name: "Product",
+    color: "bg-purple-100 text-purple-700 border-purple-200",
+  },
+  {
+    id: "builtin-startup",
+    name: "Startup",
+    color: "bg-emerald-100 text-emerald-700 border-emerald-200",
+  },
 ];
 
 function mergeBuiltInTags(tags: TodoTag[]): TodoTag[] {

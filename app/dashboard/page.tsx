@@ -313,7 +313,10 @@ export default function DashboardPage() {
   ];
 
   const protocolData = PROTOCOL_ORDER.filter(
-    (tag) => data?.protocolAverages[tag] !== undefined,
+    (tag) =>
+      tag !== "gym" &&
+      tag !== "rest" &&
+      data?.protocolAverages[tag] !== undefined,
   ).map((tag) => ({
     tag: tag.toUpperCase(),
     pct: data!.protocolAverages[tag],
@@ -380,12 +383,31 @@ export default function DashboardPage() {
                       : "text-foreground"
                 }
               />
-              <KpiCard
-                label="Gym Sessions"
-                value={String(data.totalGymSessions)}
-                sub={`${data.gymWeeks.length} week${data.gymWeeks.length !== 1 ? "s" : ""}`}
-                valueClass="text-red-600"
-              />
+              <Card className="gap-2 py-4">
+                <CardContent className="px-4">
+                  <div className="text-[10px] font-mono tracking-[0.18em] text-muted-foreground uppercase mb-1">
+                    Gym
+                  </div>
+                  <div className="flex items-end justify-between gap-4">
+                    <div>
+                      <div className="text-3xl font-bold font-mono leading-none text-red-600">
+                        {data.totalGymSessions}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground mt-1 font-mono">
+                        sessions
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-3xl font-bold font-mono leading-none text-orange-500">
+                        {data.gymStreak}
+                      </div>
+                      <div className="text-[11px] text-muted-foreground mt-1 font-mono">
+                        streak
+                      </div>
+                    </div>
+                  </div>
+                </CardContent>
+              </Card>
               <KpiCard
                 label="Best Days"
                 value={String(data.statusCounts.done)}
