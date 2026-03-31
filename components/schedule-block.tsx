@@ -74,7 +74,7 @@ export function ScheduleBlock({
       onClick={interactive ? onToggle : undefined}
       disabled={!interactive}
       className={cn(
-        "w-full text-left border rounded-[4px] mb-0 overflow-hidden transition-colors duration-200",
+        "w-full text-left border rounded-lg mb-0 overflow-hidden transition-colors duration-200",
         interactive ? "cursor-pointer" : "cursor-default",
         isPrompting && "block-bump",
         isDone
@@ -104,7 +104,7 @@ export function ScheduleBlock({
         {/* Time */}
         <div
           className={cn(
-            "font-mono text-[10px] sm:text-[11px] min-w-[76px] sm:min-w-[100px] tracking-[0.05em]",
+            "font-mono text-[10px] sm:text-[11px] min-w-19 sm:min-w-25 tracking-[0.05em]",
             isDone
               ? "text-dos-green"
               : isActive
@@ -123,19 +123,19 @@ export function ScheduleBlock({
         <div className="flex-1 min-w-0">
           <div
             className={cn(
-              "font-sans font-bold text-[15px] sm:text-[17px] tracking-[0.02em] leading-none mb-[2px]",
+              "font-sans font-bold text-[15px] sm:text-[17px] tracking-[0.02em] leading-none mb-0.5",
               isActive && "text-dos-amber",
               isPrompting && "text-orange-600 dark:text-orange-400",
             )}
           >
             {title}
             {isActive && (
-              <span className="ml-2 bg-dos-amber text-dos-bg font-mono text-[9px] tracking-[0.15em] px-2 py-[2px] inline-block align-middle dos-pulse">
+              <span className="ml-2 bg-dos-amber text-dos-bg font-mono text-[9px] tracking-[0.15em] px-2 py-0.5 inline-block align-middle dos-pulse">
                 NOW
               </span>
             )}
             {isPrompting && (
-              <span className="ml-2 bg-orange-400 text-white font-mono text-[9px] tracking-[0.15em] px-2 py-[2px] inline-block align-middle">
+              <span className="ml-2 bg-orange-400 text-white font-mono text-[9px] tracking-[0.15em] px-2 py-0.5 inline-block align-middle">
                 LOG IT
               </span>
             )}
@@ -156,7 +156,7 @@ export function ScheduleBlock({
         {/* Tag */}
         <Badge
           variant="outline"
-          className={`tag-${tag} font-mono text-[9px] font-bold tracking-[0.15em] uppercase rounded-[2px] h-auto py-[3px] border-transparent`}
+          className={`tag-${tag} font-mono text-[9px] font-bold tracking-[0.15em] uppercase rounded-[2px] h-auto py-0.75 border-transparent`}
         >
           {tag}
         </Badge>

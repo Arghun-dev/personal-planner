@@ -138,7 +138,7 @@ export default function Home() {
         badHabitStreak={badHabitStreak}
       />
 
-      <main className="max-w-[1100px] mx-auto px-4 sm:px-8 py-4 sm:py-8 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
+      <main className="max-w-275 mx-auto px-4 sm:px-8 py-4 sm:py-8 grid grid-cols-1 lg:grid-cols-[1fr_340px] gap-6">
         <div>
           <SectionLabel>today&apos;s protocol</SectionLabel>
 
@@ -163,6 +163,11 @@ export default function Home() {
               const isTodayGymSkipped =
                 gymDays[String(todayWeekIdx)] === "skipped";
 
+              const todayISO = (() => {
+                const d = new Date();
+                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+              })();
+
               return scheduleWithState.map((block, blockIdx) => {
                 // Tags that belong to this block. For the growth block, also
                 // include the study-specific tags: AI, Product, Startup.
@@ -175,8 +180,10 @@ export default function Home() {
                         GROWTH_EXTRA.includes(t.name.toLowerCase())),
                   )
                   .map((t) => t.id);
-                const blockTasks = todos.items.filter((it) =>
-                  it.tagIds.some((tid) => blockTagIds.includes(tid)),
+                const blockTasks = todos.items.filter(
+                  (it) =>
+                    (!it.dueDate || it.dueDate === todayISO) &&
+                    it.tagIds.some((tid) => blockTagIds.includes(tid)),
                 );
                 const hasWakeRow = block.id === "s1" || block.id === "w1";
                 const hasTasks = blockTasks.length > 0;
@@ -318,7 +325,7 @@ export default function Home() {
                         <button
                           type="button"
                           onClick={() => toggleGym(todayWeekIdx)}
-                          className="w-full flex items-center gap-2 px-4 py-2 text-[11px] font-mono text-destructive hover:bg-destructive/10 border border-destructive/30 rounded-[4px] mt-1 transition-colors"
+                          className="w-full flex items-center gap-2 px-4 py-2 text-[11px] font-mono text-destructive hover:bg-destructive/10 border border-destructive/30 rounded-lg mt-1 transition-colors"
                         >
                           <XIcon className="size-3 shrink-0" />
                           SKIP SESSION
