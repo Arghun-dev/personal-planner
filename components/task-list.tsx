@@ -40,26 +40,43 @@ export type TodoPatch = Partial<
 >;
 
 // ── Colour palette for tags ────────────────────────────────────────────────
+// New tags store an actual hex value so any color can be picked. Tags saved
+// before this change may still carry the old Tailwind class-list format
+// (e.g. "bg-violet-100 text-violet-700 border-violet-200") — both render fine.
 const TAG_COLORS = [
-  { label: "Violet", value: "bg-violet-100 text-violet-700 border-violet-200" },
-  { label: "Blue", value: "bg-blue-100 text-blue-700 border-blue-200" },
-  { label: "Cyan", value: "bg-cyan-100 text-cyan-700 border-cyan-200" },
-  { label: "Green", value: "bg-green-100 text-green-700 border-green-200" },
-  { label: "Yellow", value: "bg-yellow-100 text-yellow-700 border-yellow-200" },
-  { label: "Orange", value: "bg-orange-100 text-orange-700 border-orange-200" },
-  { label: "Red", value: "bg-red-100 text-red-700 border-red-200" },
-  { label: "Pink", value: "bg-pink-100 text-pink-700 border-pink-200" },
-  { label: "Gray", value: "bg-gray-100 text-gray-600 border-gray-200" },
+  { label: "Violet", value: "#8b5cf6" },
+  { label: "Blue", value: "#3b82f6" },
+  { label: "Cyan", value: "#06b6d4" },
+  { label: "Green", value: "#22c55e" },
+  { label: "Yellow", value: "#eab308" },
+  { label: "Orange", value: "#f97316" },
+  { label: "Red", value: "#ef4444" },
+  { label: "Pink", value: "#ec4899" },
+  { label: "Gray", value: "#6b7280" },
 ];
+
+function isHexColor(color: string): boolean {
+  return color.startsWith("#");
+}
+
+function hexTagStyle(color: string): React.CSSProperties {
+  return {
+    backgroundColor: `color-mix(in oklab, ${color} 16%, var(--card))`,
+    color,
+    borderColor: `color-mix(in oklab, ${color} 45%, transparent)`,
+  };
+}
 
 // ── Small shared bits ───────────────────────────────────────────────────────
 function TagPill({ tag, onRemove }: { tag: TodoTag; onRemove?: () => void }) {
+  const hex = isHexColor(tag.color);
   return (
     <span
       className={cn(
         "inline-flex items-center gap-1 rounded-full border px-2 py-0.5 text-[11px] font-semibold",
-        tag.color,
+        !hex && tag.color,
       )}
+      style={hex ? hexTagStyle(tag.color) : undefined}
     >
       {tag.name}
       {onRemove && (
@@ -85,23 +102,59 @@ function ColorSwatches({
   selected: string;
   onSelect: (v: string) => void;
 }) {
+  const isPreset = TAG_COLORS.some((c) => c.value === selected);
+  const isValidHex = /^#[0-9a-fA-F]{6}$/.test(selected);
+
   return (
-    <div className="flex gap-1.5 flex-wrap">
-      {TAG_COLORS.map((c) => (
-        <button
-          key={c.value}
-          type="button"
-          title={c.label}
-          onClick={() => onSelect(c.value)}
+    <div className="flex flex-col gap-2">
+      <div className="flex items-center gap-1.5 flex-wrap">
+        {TAG_COLORS.map((c) => (
+          <button
+            key={c.value}
+            type="button"
+            title={c.label}
+            onClick={() => onSelect(c.value)}
+            style={{ backgroundColor: c.value }}
+            className={cn(
+              "size-5 rounded-full border-2 transition-all cursor-pointer",
+              selected === c.value
+                ? "border-foreground scale-110"
+                : "border-transparent",
+            )}
+          />
+        ))}
+        <label
+          title="Custom color"
+          style={!isPreset && isValidHex ? { backgroundColor: selected } : undefined}
           className={cn(
-            "size-5 rounded-full border-2 transition-all cursor-pointer",
-            c.value.split(" ")[0],
-            selected === c.value
+            "relative size-5 rounded-full border-2 shrink-0 cursor-pointer overflow-hidden transition-all",
+            !isPreset && isValidHex
               ? "border-foreground scale-110"
-              : "border-transparent",
+              : "border-transparent [background:conic-gradient(from_0deg,#ef4444,#eab308,#22c55e,#06b6d4,#3b82f6,#ec4899,#ef4444)]",
           )}
-        />
-      ))}
+        >
+          <input
+            type="color"
+            value={isValidHex ? selected : "#8b5cf6"}
+            onChange={(e) => onSelect(e.target.value)}
+            className="absolute inset-0 size-full cursor-pointer opacity-0"
+          />
+        </label>
+      </div>
+      {!isPreset && (
+        <div className="flex items-center gap-1.5">
+          <span className="text-[10px] text-muted-foreground shrink-0">
+            Custom
+          </span>
+          <input
+            value={selected}
+            onChange={(e) => onSelect(e.target.value)}
+            placeholder="#7c3aed"
+            spellCheck={false}
+            className="h-6 w-24 rounded border border-border bg-transparent px-1.5 text-[11px] font-mono outline-none focus:border-primary"
+          />
+        </div>
+      )}
     </div>
   );
 }
@@ -1020,24 +1073,29 @@ export function TaskList({
               >
                 All
               </button>
-              {tags.map((tag) => (
-                <button
-                  key={tag.id}
-                  type="button"
-                  onClick={() => toggleTagFilter(tag.id)}
-                  className={cn(
-                    "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-all cursor-pointer",
-                    tagFilters.has(tag.id)
-                      ? tag.color + " ring-2 ring-offset-1 ring-primary/30"
-                      : "border-border text-muted-foreground hover:border-primary",
-                  )}
-                >
-                  {tag.name}
-                  <span className="text-[9px] opacity-70">
-                    {items.filter((it) => it.tagIds.includes(tag.id)).length}
-                  </span>
-                </button>
-              ))}
+              {tags.map((tag) => {
+                const active = tagFilters.has(tag.id);
+                const hex = isHexColor(tag.color);
+                return (
+                  <button
+                    key={tag.id}
+                    type="button"
+                    onClick={() => toggleTagFilter(tag.id)}
+                    style={active && hex ? hexTagStyle(tag.color) : undefined}
+                    className={cn(
+                      "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-all cursor-pointer",
+                      active
+                        ? cn(!hex && tag.color, "ring-2 ring-offset-1 ring-primary/30")
+                        : "border-border text-muted-foreground hover:border-primary",
+                    )}
+                  >
+                    {tag.name}
+                    <span className="text-[9px] opacity-70">
+                      {items.filter((it) => it.tagIds.includes(tag.id)).length}
+                    </span>
+                  </button>
+                );
+              })}
             </div>
             <Separator />
           </>
