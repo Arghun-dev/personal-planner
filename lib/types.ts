@@ -14,6 +14,8 @@ export interface TodoTag {
   color: string; // tailwind bg color token, e.g. "bg-violet-100 text-violet-700"
 }
 
+export type TodoPriority = "med" | "high";
+
 export interface TodoItem {
   id: string;
   text: string;
@@ -23,6 +25,8 @@ export interface TodoItem {
   link?: string;
   /** ISO date "YYYY-MM-DD". Optional — only set when user picks a due date. */
   dueDate?: string;
+  /** Absent = no priority set. */
+  priority?: TodoPriority;
 }
 
 export interface TodoState {

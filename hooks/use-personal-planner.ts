@@ -1,7 +1,13 @@
 "use client";
 
 import { useState, useEffect, useCallback, startTransition } from "react";
-import type { AppState, SleepEntry, TodoItem, TodoTag } from "@/lib/types";
+import type {
+  AppState,
+  SleepEntry,
+  TodoItem,
+  TodoPriority,
+  TodoTag,
+} from "@/lib/types";
 import { getSchedule, DAYS, DAYS_FULL, MONTHS } from "@/lib/constants";
 import { loadState, saveState } from "@/lib/actions";
 
@@ -381,7 +387,13 @@ export function usePersonalPlanner() {
   // ── Todo mutations ──────────────────────────────────────────────────────
 
   const addTodoItem = useCallback(
-    (text: string, tagIds: string[], link?: string, dueDate?: string) => {
+    (
+      text: string,
+      tagIds: string[],
+      link?: string,
+      dueDate?: string,
+      priority?: TodoPriority,
+    ) => {
       setState((prev) => {
         const todos = prev.todos ?? { tags: [], items: [] };
         const item: TodoItem = {
@@ -392,6 +404,7 @@ export function usePersonalPlanner() {
           createdAt: Date.now(),
           ...(link ? { link } : {}),
           ...(dueDate ? { dueDate } : {}),
+          ...(priority ? { priority } : {}),
         };
         const next: AppState = {
           ...prev,
@@ -436,7 +449,9 @@ export function usePersonalPlanner() {
   const updateTodoItem = useCallback(
     (
       id: string,
-      patch: Partial<Pick<TodoItem, "text" | "tagIds" | "link" | "dueDate">>,
+      patch: Partial<
+        Pick<TodoItem, "text" | "tagIds" | "link" | "dueDate" | "priority">
+      >,
     ) => {
       setState((prev) => {
         const todos = prev.todos ?? { tags: [], items: [] };
@@ -455,6 +470,60 @@ export function usePersonalPlanner() {
     },
     [],
   );
+
+  const bulkCompleteTodoItems = useCallback((ids: string[]) => {
+    setState((prev) => {
+      const todos = prev.todos ?? { tags: [], items: [] };
+      const idSet = new Set(ids);
+      const next: AppState = {
+        ...prev,
+        todos: {
+          ...todos,
+          items: todos.items.map((it) =>
+            idSet.has(it.id) ? { ...it, done: true } : it,
+          ),
+        },
+      };
+      persist(next);
+      return next;
+    });
+  }, []);
+
+  const bulkDeleteTodoItems = useCallback((ids: string[]) => {
+    setState((prev) => {
+      const todos = prev.todos ?? { tags: [], items: [] };
+      const idSet = new Set(ids);
+      const next: AppState = {
+        ...prev,
+        todos: {
+          ...todos,
+          items: todos.items.filter((it) => !idSet.has(it.id)),
+        },
+      };
+      persist(next);
+      return next;
+    });
+  }, []);
+
+  const bulkAddTagToItems = useCallback((ids: string[], tagId: string) => {
+    setState((prev) => {
+      const todos = prev.todos ?? { tags: [], items: [] };
+      const idSet = new Set(ids);
+      const next: AppState = {
+        ...prev,
+        todos: {
+          ...todos,
+          items: todos.items.map((it) =>
+            idSet.has(it.id) && !it.tagIds.includes(tagId)
+              ? { ...it, tagIds: [...it.tagIds, tagId] }
+              : it,
+          ),
+        },
+      };
+      persist(next);
+      return next;
+    });
+  }, []);
 
   const reorderTodoItems = useCallback((fromId: string, toId: string) => {
     setState((prev) => {
@@ -584,6 +653,9 @@ export function usePersonalPlanner() {
     deleteTodoItem,
     updateTodoItem,
     reorderTodoItems,
+    bulkCompleteTodoItems,
+    bulkDeleteTodoItems,
+    bulkAddTagToItems,
     addTodoTag,
     updateTodoTag,
     deleteTodoTag,
