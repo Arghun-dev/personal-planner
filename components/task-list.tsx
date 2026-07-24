@@ -1,8 +1,19 @@
 "use client";
 
-import { useState, useRef, useEffect } from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
-import type { TodoItem, TodoTag } from "@/lib/types";
+import type { TodoItem, TodoPriority, TodoTag } from "@/lib/types";
+import {
+  formatDueDate,
+  getTaskGroup,
+  getTodayISO,
+  isOverdue,
+  compareTasks,
+  parseQuickAdd,
+  TASK_GROUP_ORDER,
+  TASK_GROUP_LABEL,
+  type TaskGroupKey,
+} from "@/lib/todo-utils";
 
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -18,21 +29,15 @@ import {
   XIcon,
   LinkIcon,
   CalendarIcon,
+  FlagIcon,
+  ListChecksIcon,
+  ChevronDownIcon,
+  ChevronRightIcon,
 } from "lucide-react";
 
-// ── Due date helpers ──────────────────────────────────────────────────────
-function getTodayISO(): string {
-  const d = new Date();
-  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-}
-
-function formatDueDate(iso: string): string {
-  const [y, m, day] = iso.split("-").map(Number);
-  return new Date(y, m - 1, day).toLocaleDateString(undefined, {
-    month: "short",
-    day: "numeric",
-  });
-}
+export type TodoPatch = Partial<
+  Pick<TodoItem, "text" | "tagIds" | "link" | "dueDate" | "priority">
+>;
 
 // ── Colour palette for tags ────────────────────────────────────────────────
 const TAG_COLORS = [
@@ -47,7 +52,7 @@ const TAG_COLORS = [
   { label: "Gray", value: "bg-gray-100 text-gray-600 border-gray-200" },
 ];
 
-// ── TagPill ────────────────────────────────────────────────────────────────
+// ── Small shared bits ───────────────────────────────────────────────────────
 function TagPill({ tag, onRemove }: { tag: TodoTag; onRemove?: () => void }) {
   return (
     <span
@@ -73,7 +78,6 @@ function TagPill({ tag, onRemove }: { tag: TodoTag; onRemove?: () => void }) {
   );
 }
 
-// ── ColorSwatch row ────────────────────────────────────────────────────────
 function ColorSwatches({
   selected,
   onSelect,
@@ -102,21 +106,26 @@ function ColorSwatches({
   );
 }
 
-// ── Dropdown ──────────────────────────────────────────────────────────────
 function Dropdown({
   triggerContent,
   triggerClassName,
   children,
   align = "end",
   className,
+  open: controlledOpen,
+  onOpenChange,
 }: {
   triggerContent: React.ReactNode;
   triggerClassName?: string;
   children: React.ReactNode;
   align?: "start" | "end";
   className?: string;
+  open?: boolean;
+  onOpenChange?: (open: boolean) => void;
 }) {
-  const [open, setOpen] = useState(false);
+  const [uncontrolledOpen, setUncontrolledOpen] = useState(false);
+  const open = controlledOpen ?? uncontrolledOpen;
+  const setOpen = onOpenChange ?? setUncontrolledOpen;
   const wrapRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -127,13 +136,13 @@ function Dropdown({
     }
     document.addEventListener("mousedown", onOutside);
     return () => document.removeEventListener("mousedown", onOutside);
-  }, [open]);
+  }, [open, setOpen]);
 
   return (
     <div ref={wrapRef} style={{ position: "relative" }}>
       <button
         type="button"
-        onClick={() => setOpen((o) => !o)}
+        onClick={() => setOpen(!open)}
         className={cn("cursor-pointer", triggerClassName)}
       >
         {triggerContent}
@@ -158,7 +167,6 @@ function Dropdown({
   );
 }
 
-// ── TagPickerBody (renders the list inside a popover; caller owns the <PopoverContent>) ──
 function TagPickerBody({
   allTags,
   selectedIds,
@@ -198,7 +206,6 @@ function TagPickerBody({
   );
 }
 
-// ── TagManagerPanel ────────────────────────────────────────────────────────
 function TagManagerPanel({
   tags,
   onAdd,
@@ -338,10 +345,52 @@ function TagManagerPanel({
   );
 }
 
-// ── TodoRow ────────────────────────────────────────────────────────────────
-function TodoRow({
+// ── Priority ─────────────────────────────────────────────────────────────
+function nextPriority(p?: TodoPriority): TodoPriority | undefined {
+  if (p === undefined) return "med";
+  if (p === "med") return "high";
+  return undefined;
+}
+
+function PriorityFlag({
+  priority,
+  onCycle,
+}: {
+  priority?: TodoPriority;
+  onCycle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        onCycle();
+      }}
+      title={
+        priority === "high"
+          ? "High priority — click to clear"
+          : priority === "med"
+            ? "Medium priority — click for high"
+            : "Set priority"
+      }
+      className={cn(
+        "mt-[9px] size-1.5 rounded-[2px] shrink-0 cursor-pointer transition-colors",
+        priority === "high" && "bg-destructive",
+        priority === "med" && "bg-orange-400",
+        !priority &&
+          "bg-transparent ring-1 ring-inset ring-border hover:ring-muted-foreground/60",
+      )}
+    />
+  );
+}
+
+// ── Task row ─────────────────────────────────────────────────────────────
+function TaskRow({
   item,
   allTags,
+  selectMode,
+  selected,
+  onToggleSelect,
   onToggle,
   onDelete,
   onUpdate,
@@ -350,11 +399,12 @@ function TodoRow({
 }: {
   item: TodoItem;
   allTags: TodoTag[];
+  selectMode?: boolean;
+  selected?: boolean;
+  onToggleSelect?: () => void;
   onToggle: () => void;
   onDelete: () => void;
-  onUpdate: (
-    patch: Partial<Pick<TodoItem, "text" | "tagIds" | "link" | "dueDate">>,
-  ) => void;
+  onUpdate: (patch: TodoPatch) => void;
   dragHandlers?: {
     onDragStart: () => void;
     onDragEnter: () => void;
@@ -367,6 +417,9 @@ function TodoRow({
   const [draftLink, setDraftLink] = useState(item.link ?? "");
   const [draftTagIds, setDraftTagIds] = useState<string[]>(item.tagIds);
   const [draftDueDate, setDraftDueDate] = useState(item.dueDate ?? "");
+  const [draftPriority, setDraftPriority] = useState<TodoPriority | undefined>(
+    item.priority,
+  );
   const inputRef = useRef<HTMLInputElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
 
@@ -375,14 +428,11 @@ function TodoRow({
     setDraftLink(item.link ?? "");
     setDraftTagIds(item.tagIds);
     setDraftDueDate(item.dueDate ?? "");
+    setDraftPriority(item.priority);
     setEditing(true);
   }
 
   function revert() {
-    setDraftText(item.text);
-    setDraftLink(item.link ?? "");
-    setDraftTagIds(item.tagIds);
-    setDraftDueDate(item.dueDate ?? "");
     setEditing(false);
   }
 
@@ -392,14 +442,24 @@ function TodoRow({
       revert();
       return;
     }
-    const link = draftLink.trim() || undefined;
-    const dueDate = draftDueDate || undefined;
-    onUpdate({ text, link, tagIds: draftTagIds, dueDate });
+    onUpdate({
+      text,
+      link: draftLink.trim() || undefined,
+      tagIds: draftTagIds,
+      dueDate: draftDueDate || undefined,
+      priority: draftPriority,
+    });
     setEditing(false);
   }
 
   function handleContainerBlur(e: React.FocusEvent<HTMLDivElement>) {
     if (containerRef.current?.contains(e.relatedTarget as Node)) return;
+    if (
+      (e.relatedTarget as Element | null)?.closest(
+        "[data-radix-popper-content-wrapper]",
+      )
+    )
+      return;
     commitEdit();
   }
 
@@ -408,15 +468,15 @@ function TodoRow({
   }, [editing]);
 
   const itemTags = allTags.filter((t) => item.tagIds.includes(t.id));
+  const overdue = isOverdue(item);
 
   if (editing) {
     return (
       <div
         ref={containerRef}
         onBlur={handleContainerBlur}
-        className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-muted/30"
+        className="flex items-start gap-3 px-3 py-2.5 rounded-lg bg-muted/30 mx-1.5"
       >
-        {/* Checkbox */}
         <button
           type="button"
           onClick={onToggle}
@@ -430,7 +490,6 @@ function TodoRow({
           {item.done && <CheckIcon className="size-2.5 stroke-3" />}
         </button>
 
-        {/* Edit fields */}
         <div className="flex-1 min-w-0 space-y-2">
           <input
             ref={inputRef}
@@ -447,9 +506,7 @@ function TodoRow({
             <input
               value={draftLink}
               onChange={(e) => setDraftLink(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") revert();
-              }}
+              onKeyDown={(e) => e.key === "Escape" && revert()}
               placeholder="https://..."
               className="flex-1 bg-transparent outline-none text-xs border-b border-border py-0.5 placeholder:text-muted-foreground/50"
             />
@@ -460,11 +517,31 @@ function TodoRow({
               type="date"
               value={draftDueDate}
               onChange={(e) => setDraftDueDate(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key === "Escape") revert();
-              }}
+              onKeyDown={(e) => e.key === "Escape" && revert()}
               className="flex-1 bg-transparent outline-none text-xs border-b border-border py-0.5 text-foreground"
             />
+          </div>
+          <div className="flex items-center gap-2">
+            <FlagIcon className="size-3 text-muted-foreground shrink-0" />
+            <button
+              type="button"
+              onClick={() => setDraftPriority(nextPriority(draftPriority))}
+              className={cn(
+                "cursor-pointer text-[11px] font-semibold px-2 py-0.5 rounded-full border transition-colors",
+                draftPriority === "high" &&
+                  "bg-destructive/10 text-destructive border-destructive/30",
+                draftPriority === "med" &&
+                  "bg-orange-500/10 text-orange-500 border-orange-500/30",
+                !draftPriority &&
+                  "border-dashed border-border text-muted-foreground hover:text-foreground",
+              )}
+            >
+              {draftPriority === "high"
+                ? "High"
+                : draftPriority === "med"
+                  ? "Medium"
+                  : "No priority"}
+            </button>
           </div>
           <div className="flex flex-wrap items-center gap-1">
             {allTags
@@ -515,13 +592,27 @@ function TodoRow({
       onDragEnd={dragHandlers?.onDragEnd}
       onDragOver={(e) => e.preventDefault()}
       className={cn(
-        "group flex items-start gap-3 px-3 py-2.5 rounded-lg transition-colors hover:bg-muted/50",
+        "group flex items-start gap-2.5 px-2 py-2 mx-1.5 rounded-lg transition-colors hover:bg-muted/50",
         item.done && "opacity-60",
         isDragOver && "border-t-2 border-primary",
         dragHandlers && "cursor-grab active:cursor-grabbing",
       )}
     >
-      {/* Checkbox visual */}
+      {selectMode && (
+        <button
+          type="button"
+          onClick={onToggleSelect}
+          className={cn(
+            "mt-0.5 size-4 rounded border-[1.5px] flex items-center justify-center shrink-0 transition-colors cursor-pointer",
+            selected
+              ? "bg-primary border-primary text-primary-foreground"
+              : "border-input hover:border-primary",
+          )}
+        >
+          {selected && <CheckIcon className="size-2.5 stroke-3" />}
+        </button>
+      )}
+
       <button
         type="button"
         onClick={onToggle}
@@ -535,7 +626,11 @@ function TodoRow({
         {item.done && <CheckIcon className="size-2.5 stroke-3" />}
       </button>
 
-      {/* Text + tags */}
+      <PriorityFlag
+        priority={item.priority}
+        onCycle={() => onUpdate({ priority: nextPriority(item.priority) })}
+      />
+
       <div className="flex-1 min-w-0">
         <p
           className={cn(
@@ -546,47 +641,42 @@ function TodoRow({
           {item.text}
         </p>
 
-        {item.link && (
-          <a
-            href={item.link}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex items-center gap-1 mt-1 text-[11px] text-primary hover:underline truncate max-w-full"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <LinkIcon className="size-2.5 shrink-0" />
-            {item.link.replace(/^https?:\/\//, "").slice(0, 40)}
-            {item.link.replace(/^https?:\/\//, "").length > 40 ? "…" : ""}
-          </a>
-        )}
-        {item.dueDate &&
-          (() => {
-            const overdue = !item.done && item.dueDate < getTodayISO();
-            return (
-              <div
+        {(itemTags.length > 0 || item.dueDate || item.link) && (
+          <div className="flex flex-wrap items-center gap-1.5 mt-1">
+            {itemTags.map((tag) => (
+              <TagPill key={tag.id} tag={tag} />
+            ))}
+            {item.dueDate && (
+              <span
                 className={cn(
-                  "inline-flex items-center gap-1 mt-1 text-[10px] font-mono",
+                  "inline-flex items-center gap-1 text-[10px] font-mono",
                   overdue
-                    ? "text-red-600 font-semibold"
+                    ? "text-destructive font-semibold"
                     : "text-muted-foreground",
                 )}
               >
                 <CalendarIcon className="size-2.5" />
                 {formatDueDate(item.dueDate)}
-                {overdue && " \u00b7 Overdue"}
-              </div>
-            );
-          })()}
-        {itemTags.length > 0 && (
-          <div className="flex flex-wrap gap-1 mt-1.5">
-            {itemTags.map((tag) => (
-              <TagPill key={tag.id} tag={tag} />
-            ))}
+                {overdue && " · overdue"}
+              </span>
+            )}
+            {item.link && (
+              <a
+                href={item.link}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1 text-[11px] text-primary hover:underline truncate max-w-full"
+                onClick={(e) => e.stopPropagation()}
+              >
+                <LinkIcon className="size-2.5 shrink-0" />
+                {item.link.replace(/^https?:\/\//, "").slice(0, 32)}
+                {item.link.replace(/^https?:\/\//, "").length > 32 ? "…" : ""}
+              </a>
+            )}
           </div>
         )}
       </div>
 
-      {/* Row actions */}
       <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5">
         <button
           type="button"
@@ -596,11 +686,11 @@ function TodoRow({
         >
           <PencilIcon className="size-3" />
         </button>
-
         <button
           type="button"
           onClick={onDelete}
           className="cursor-pointer inline-flex items-center justify-center size-6 rounded hover:bg-destructive/10 text-muted-foreground hover:text-destructive transition-colors"
+          title="Delete"
         >
           <Trash2Icon className="size-3" />
         </button>
@@ -609,24 +699,134 @@ function TodoRow({
   );
 }
 
-// ── Main TodoManager ───────────────────────────────────────────────────────
+// ── Group section ─────────────────────────────────────────────────────────
+const GROUP_RAIL: Record<TaskGroupKey, string> = {
+  overdue: "bg-destructive",
+  today: "bg-primary",
+  upcoming: "bg-chart-4",
+  nodate: "bg-muted-foreground",
+  done: "bg-chart-1",
+};
+const GROUP_TEXT: Record<TaskGroupKey, string> = {
+  overdue: "text-destructive",
+  today: "text-primary",
+  upcoming: "text-chart-4",
+  nodate: "text-muted-foreground",
+  done: "text-chart-1",
+};
+
+function GroupSection({
+  groupKey,
+  items,
+  allTags,
+  selectMode,
+  selectedIds,
+  onToggleSelect,
+  onToggleItem,
+  onDeleteItem,
+  onUpdateItem,
+  onReorderItems,
+  collapsible,
+}: {
+  groupKey: TaskGroupKey;
+  items: TodoItem[];
+  allTags: TodoTag[];
+  selectMode: boolean;
+  selectedIds: Set<string>;
+  onToggleSelect: (id: string) => void;
+  onToggleItem: (id: string) => void;
+  onDeleteItem: (id: string) => void;
+  onUpdateItem: (id: string, patch: TodoPatch) => void;
+  onReorderItems: (fromId: string, toId: string) => void;
+  collapsible?: boolean;
+}) {
+  const [collapsed, setCollapsed] = useState(!!collapsible);
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+
+  if (items.length === 0) return null;
+
+  return (
+    <div className="py-1">
+      <button
+        type="button"
+        onClick={() => collapsible && setCollapsed((c) => !c)}
+        className={cn(
+          "w-full flex items-center gap-2 px-4 py-1.5",
+          collapsible && "cursor-pointer",
+        )}
+      >
+        <span className={cn("w-[3px] h-3 rounded-full", GROUP_RAIL[groupKey])} />
+        <span
+          className={cn(
+            "font-mono text-[10px] font-bold tracking-widest uppercase",
+            GROUP_TEXT[groupKey],
+          )}
+        >
+          {TASK_GROUP_LABEL[groupKey]}
+        </span>
+        <span className="font-mono text-[10px] text-muted-foreground">
+          · {items.length}
+        </span>
+        {collapsible &&
+          (collapsed ? (
+            <ChevronRightIcon className="size-3 text-muted-foreground ml-0.5" />
+          ) : (
+            <ChevronDownIcon className="size-3 text-muted-foreground ml-0.5" />
+          ))}
+      </button>
+      {!collapsed && (
+        <div>
+          {items.map((item) => (
+            <TaskRow
+              key={item.id}
+              item={item}
+              allTags={allTags}
+              selectMode={selectMode}
+              selected={selectedIds.has(item.id)}
+              onToggleSelect={() => onToggleSelect(item.id)}
+              onToggle={() => onToggleItem(item.id)}
+              onDelete={() => onDeleteItem(item.id)}
+              onUpdate={(patch) => onUpdateItem(item.id, patch)}
+              isDragOver={overId === item.id && dragId !== item.id}
+              dragHandlers={
+                item.done
+                  ? undefined
+                  : {
+                      onDragStart: () => setDragId(item.id),
+                      onDragEnter: () => setOverId(item.id),
+                      onDragEnd: () => {
+                        if (dragId && overId && dragId !== overId) {
+                          onReorderItems(dragId, overId);
+                        }
+                        setDragId(null);
+                        setOverId(null);
+                      },
+                    }
+              }
+            />
+          ))}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main TaskList ───────────────────────────────────────────────────────────
 interface Props {
   items: TodoItem[];
   tags: TodoTag[];
-  /** When true: only shows tasks due today, new tasks auto-get today as dueDate */
-  todayOnly?: boolean;
+  mode: "compact" | "full";
   onAddItem: (
     text: string,
     tagIds: string[],
     link?: string,
     dueDate?: string,
+    priority?: TodoPriority,
   ) => void;
   onToggleItem: (id: string) => void;
   onDeleteItem: (id: string) => void;
-  onUpdateItem: (
-    id: string,
-    patch: Partial<Pick<TodoItem, "text" | "tagIds" | "link" | "dueDate">>,
-  ) => void;
+  onUpdateItem: (id: string, patch: TodoPatch) => void;
   onReorderItems: (fromId: string, toId: string) => void;
   onAddTag: (name: string, color: string) => void;
   onUpdateTag: (
@@ -634,12 +834,15 @@ interface Props {
     patch: Partial<Pick<TodoTag, "name" | "color">>,
   ) => void;
   onDeleteTag: (id: string) => void;
+  onBulkComplete?: (ids: string[]) => void;
+  onBulkDelete?: (ids: string[]) => void;
+  onBulkAddTag?: (ids: string[], tagId: string) => void;
 }
 
-export function TodoManager({
+export function TaskList({
   items,
   tags,
-  todayOnly = false,
+  mode,
   onAddItem,
   onToggleItem,
   onDeleteItem,
@@ -648,47 +851,99 @@ export function TodoManager({
   onAddTag,
   onUpdateTag,
   onDeleteTag,
+  onBulkComplete,
+  onBulkDelete,
+  onBulkAddTag,
 }: Props) {
+  const isFull = mode === "full";
+  const today = getTodayISO();
+
   const [newText, setNewText] = useState("");
   const [newTagIds, setNewTagIds] = useState<string[]>([]);
   const [newLink, setNewLink] = useState("");
   const [newDueDate, setNewDueDate] = useState("");
+  const [newPriority, setNewPriority] = useState<TodoPriority | undefined>();
   const [showLinkInput, setShowLinkInput] = useState(false);
-  const [activeFilter, setActiveFilter] = useState<string | null>(null);
-  const [dragId, setDragId] = useState<string | null>(null);
-  const [overId, setOverId] = useState<string | null>(null);
 
-  const today = getTodayISO();
+  const [tagFilters, setTagFilters] = useState<Set<string>>(new Set());
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [bulkTagOpen, setBulkTagOpen] = useState(false);
 
-  // In today-only mode show only tasks explicitly due today
-  const visibleItems = todayOnly
-    ? items.filter((it) => it.dueDate === today)
-    : items;
+  const parsed = useMemo(() => parseQuickAdd(newText, tags), [newText, tags]);
+
+  function toggleTagFilter(id: string) {
+    setTagFilters((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function exitSelectMode() {
+    setSelectMode(false);
+    setSelectedIds(new Set());
+  }
 
   function handleAdd() {
-    const text = newText.trim();
+    const text = parsed.cleanText;
     if (!text) return;
-    const link = newLink.trim();
-    // In today-only mode always use today; otherwise use whatever was picked
-    const dueDate = todayOnly ? today : newDueDate || undefined;
-    onAddItem(text, newTagIds, link || undefined, dueDate);
+    const tagIds = Array.from(new Set([...newTagIds, ...parsed.tagIds]));
+    const priority = parsed.priority ?? newPriority;
+    const dueDate =
+      parsed.dueDate ?? newDueDate ?? (mode === "compact" ? today : undefined);
+    onAddItem(text, tagIds, newLink.trim() || undefined, dueDate, priority);
     setNewText("");
     setNewTagIds([]);
     setNewLink("");
     setNewDueDate("");
+    setNewPriority(undefined);
     setShowLinkInput(false);
   }
 
-  const filtered = activeFilter
-    ? visibleItems.filter((it) => it.tagIds.includes(activeFilter))
-    : visibleItems;
+  const tagFiltered =
+    tagFilters.size === 0
+      ? items
+      : items.filter((it) => it.tagIds.some((id) => tagFilters.has(id)));
 
-  const sorted = [
-    ...filtered.filter((it) => !it.done),
-    ...filtered.filter((it) => it.done),
-  ];
+  // Compact mode (dashboard widget): one flat "today" bucket — due today,
+  // overdue, or undated (undated tasks are treated as always-actionable).
+  const visibleItems = isFull
+    ? tagFiltered
+    : tagFiltered.filter(
+        (it) => !it.dueDate || it.dueDate <= today || isOverdue(it, today),
+      );
+
+  const grouped = useMemo(() => {
+    const map = new Map<TaskGroupKey, TodoItem[]>();
+    for (const key of TASK_GROUP_ORDER) map.set(key, []);
+    for (const it of visibleItems) {
+      map.get(getTaskGroup(it, today))!.push(it);
+    }
+    for (const key of TASK_GROUP_ORDER) {
+      map.get(key)!.sort(compareTasks);
+    }
+    return map;
+  }, [visibleItems, today]);
+
+  // Compact mode has no groups of its own — just a sorted flat list.
+  const compactSorted = useMemo(
+    () => [...visibleItems].sort(compareTasks),
+    [visibleItems],
+  );
 
   const openCount = visibleItems.filter((it) => !it.done).length;
+  const doneItems = items.filter((it) => it.done);
 
   return (
     <Card className="rounded-xl gap-0 overflow-visible">
@@ -706,40 +961,59 @@ export function TodoManager({
               </Badge>
             )}
           </div>
-          <Dropdown
-            className="w-72 p-4"
-            triggerClassName="inline-flex items-center gap-1.5 h-7 px-2 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
-            triggerContent={
-              <>
-                <TagIcon className="size-3" />
-                Manage tags
-              </>
-            }
-          >
-            <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">
-              Tag Manager
-            </p>
-            <TagManagerPanel
-              tags={tags}
-              onAdd={onAddTag}
-              onUpdate={onUpdateTag}
-              onDelete={onDeleteTag}
-            />
-          </Dropdown>
+          <div className="flex items-center gap-1">
+            {isFull && (
+              <button
+                type="button"
+                onClick={() =>
+                  selectMode ? exitSelectMode() : setSelectMode(true)
+                }
+                className={cn(
+                  "inline-flex items-center gap-1.5 h-7 px-2 rounded-md text-xs transition-colors cursor-pointer",
+                  selectMode
+                    ? "bg-primary text-primary-foreground"
+                    : "text-muted-foreground hover:text-foreground hover:bg-muted",
+                )}
+              >
+                <ListChecksIcon className="size-3" />
+                {selectMode ? "Cancel" : "Select"}
+              </button>
+            )}
+            <Dropdown
+              className="w-72 p-4"
+              triggerClassName="inline-flex items-center gap-1.5 h-7 px-2 rounded-md text-xs text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
+              triggerContent={
+                <>
+                  <TagIcon className="size-3" />
+                  Manage tags
+                </>
+              }
+            >
+              <p className="text-[10px] font-semibold uppercase tracking-widest text-muted-foreground mb-3">
+                Tag Manager
+              </p>
+              <TagManagerPanel
+                tags={tags}
+                onAdd={onAddTag}
+                onUpdate={onUpdateTag}
+                onDelete={onDeleteTag}
+              />
+            </Dropdown>
+          </div>
         </div>
 
         <Separator />
 
-        {/* ── Tag filter bar ── */}
-        {tags.length > 0 && (
+        {/* ── Tag filter bar (full mode only, multi-select) ── */}
+        {isFull && tags.length > 0 && (
           <>
             <div className="flex items-center gap-1.5 px-4 py-2.5 flex-wrap">
               <button
                 type="button"
-                onClick={() => setActiveFilter(null)}
+                onClick={() => setTagFilters(new Set())}
                 className={cn(
                   "text-[11px] font-semibold px-2.5 py-1 rounded-full border transition-colors cursor-pointer",
-                  activeFilter === null
+                  tagFilters.size === 0
                     ? "bg-primary text-primary-foreground border-primary"
                     : "border-border text-muted-foreground hover:border-primary hover:text-primary",
                 )}
@@ -750,22 +1024,17 @@ export function TodoManager({
                 <button
                   key={tag.id}
                   type="button"
-                  onClick={() =>
-                    setActiveFilter(activeFilter === tag.id ? null : tag.id)
-                  }
+                  onClick={() => toggleTagFilter(tag.id)}
                   className={cn(
                     "inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-all cursor-pointer",
-                    activeFilter === tag.id
+                    tagFilters.has(tag.id)
                       ? tag.color + " ring-2 ring-offset-1 ring-primary/30"
                       : "border-border text-muted-foreground hover:border-primary",
                   )}
                 >
                   {tag.name}
                   <span className="text-[9px] opacity-70">
-                    {
-                      visibleItems.filter((it) => it.tagIds.includes(tag.id))
-                        .length
-                    }
+                    {items.filter((it) => it.tagIds.includes(tag.id)).length}
                   </span>
                 </button>
               ))}
@@ -774,7 +1043,69 @@ export function TodoManager({
           </>
         )}
 
-        {/* ── New task input ── */}
+        {/* ── Bulk toolbar ── */}
+        {isFull && selectMode && (
+          <>
+            <div className="flex items-center justify-between px-4 py-2 bg-primary/8">
+              <span className="text-[11.5px] font-semibold text-primary">
+                {selectedIds.size} selected
+              </span>
+              <div className="flex items-center gap-3 text-[11.5px] font-semibold">
+                <button
+                  type="button"
+                  disabled={selectedIds.size === 0}
+                  onClick={() => {
+                    onBulkComplete?.(Array.from(selectedIds));
+                    exitSelectMode();
+                  }}
+                  className="cursor-pointer text-primary hover:underline disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:no-underline"
+                >
+                  Complete
+                </button>
+                {tags.length > 0 && (
+                  <Dropdown
+                    open={bulkTagOpen}
+                    onOpenChange={setBulkTagOpen}
+                    className="w-52 p-2"
+                    triggerClassName="text-primary hover:underline disabled:opacity-40"
+                    triggerContent="Add tag"
+                  >
+                    <TagPickerBody
+                      allTags={tags}
+                      selectedIds={[]}
+                      onToggle={(id) => {
+                        if (selectedIds.size > 0)
+                          onBulkAddTag?.(Array.from(selectedIds), id);
+                        setBulkTagOpen(false);
+                      }}
+                    />
+                  </Dropdown>
+                )}
+                <button
+                  type="button"
+                  disabled={selectedIds.size === 0}
+                  onClick={() => {
+                    onBulkDelete?.(Array.from(selectedIds));
+                    exitSelectMode();
+                  }}
+                  className="cursor-pointer text-destructive hover:underline disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:no-underline"
+                >
+                  Delete
+                </button>
+                <button
+                  type="button"
+                  onClick={exitSelectMode}
+                  className="cursor-pointer text-muted-foreground hover:text-foreground"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
+            <Separator />
+          </>
+        )}
+
+        {/* ── Quick add ── */}
         <div className="border-b border-border">
           <div className="flex items-center gap-2 px-4 py-3">
             <PlusIcon className="size-3.5 text-muted-foreground shrink-0" />
@@ -782,7 +1113,7 @@ export function TodoManager({
               value={newText}
               onChange={(e) => setNewText(e.target.value)}
               onKeyDown={(e) => e.key === "Enter" && handleAdd()}
-              placeholder="Add a task..."
+              placeholder="Add a task... try #tag, !high, @tomorrow"
               className="flex-1 bg-transparent outline-none text-sm placeholder:text-muted-foreground/60 min-w-0"
             />
 
@@ -806,6 +1137,24 @@ export function TodoManager({
 
             <button
               type="button"
+              onClick={() => setNewPriority(nextPriority(newPriority))}
+              className={cn(
+                "cursor-pointer inline-flex items-center justify-center size-7 rounded hover:bg-muted transition-colors shrink-0",
+                newPriority === "high" && "text-destructive",
+                newPriority === "med" && "text-orange-500",
+                !newPriority && "text-muted-foreground hover:text-foreground",
+              )}
+              title={
+                newPriority
+                  ? `Priority: ${newPriority === "high" ? "High" : "Medium"}`
+                  : "Set priority"
+              }
+            >
+              <FlagIcon className="size-3.5" />
+            </button>
+
+            <button
+              type="button"
               onClick={() => setShowLinkInput((v) => !v)}
               className={cn(
                 "cursor-pointer inline-flex items-center justify-center size-7 rounded hover:bg-muted transition-colors shrink-0",
@@ -826,7 +1175,6 @@ export function TodoManager({
                   newDueDate
                     ? "text-primary"
                     : "text-muted-foreground hover:text-foreground",
-                  todayOnly && "hidden",
                 )}
                 aria-label={
                   newDueDate
@@ -836,15 +1184,13 @@ export function TodoManager({
               >
                 <CalendarIcon className="size-3.5" />
               </button>
-              {!todayOnly && (
-                <input
-                  type="date"
-                  value={newDueDate}
-                  onChange={(e) => setNewDueDate(e.target.value)}
-                  className="absolute inset-0 w-full opacity-0 cursor-pointer"
-                  aria-label="Due date"
-                />
-              )}
+              <input
+                type="date"
+                value={newDueDate}
+                onChange={(e) => setNewDueDate(e.target.value)}
+                className="absolute inset-0 w-full opacity-0 cursor-pointer"
+                aria-label="Due date"
+              />
             </div>
 
             {tags.length > 0 && (
@@ -870,12 +1216,13 @@ export function TodoManager({
             <Button
               size="sm"
               onClick={handleAdd}
-              disabled={!newText.trim()}
+              disabled={!parsed.cleanText}
               className="h-7 px-3 text-xs shrink-0"
             >
               Add
             </Button>
           </div>
+
           {showLinkInput && (
             <div className="flex items-center gap-2 px-4 pb-3">
               <LinkIcon className="size-3 text-muted-foreground shrink-0" />
@@ -897,64 +1244,90 @@ export function TodoManager({
               )}
             </div>
           )}
-        </div>
 
-        {/* ── Task list ── */}
-        <div className="py-1">
-          {sorted.length === 0 ? (
-            <p className="text-center text-[12px] text-muted-foreground/60 py-8">
-              {activeFilter
-                ? "No tasks with this tag."
-                : todayOnly
-                  ? "No tasks for today. Add one above."
-                  : "No tasks yet. Add one above."}
-            </p>
-          ) : (
-            sorted.map((item) => (
-              <TodoRow
-                key={item.id}
-                item={item}
-                allTags={tags}
-                onToggle={() => onToggleItem(item.id)}
-                onDelete={() => onDeleteItem(item.id)}
-                onUpdate={(patch) => onUpdateItem(item.id, patch)}
-                isDragOver={overId === item.id && dragId !== item.id}
-                dragHandlers={
-                  item.done
-                    ? undefined
-                    : {
-                        onDragStart: () => setDragId(item.id),
-                        onDragEnter: () => setOverId(item.id),
-                        onDragEnd: () => {
-                          if (dragId && overId && dragId !== overId) {
-                            onReorderItems(dragId, overId);
-                          }
-                          setDragId(null);
-                          setOverId(null);
-                        },
-                      }
-                }
-              />
-            ))
+          {(parsed.matchedTags.length > 0 ||
+            parsed.priority ||
+            parsed.dueLabel) && (
+            <div className="flex items-center gap-1.5 flex-wrap px-4 pb-3 pt-0.5">
+              <span className="text-[10px] text-muted-foreground/70">
+                Parsed:
+              </span>
+              {parsed.matchedTags.map((tag) => (
+                <TagPill key={tag.id} tag={tag} />
+              ))}
+              {parsed.priority && (
+                <span
+                  className={cn(
+                    "inline-flex items-center rounded-full border px-2 py-0.5 text-[11px] font-semibold",
+                    parsed.priority === "high"
+                      ? "bg-destructive/10 text-destructive border-destructive/30"
+                      : "bg-orange-500/10 text-orange-500 border-orange-500/30",
+                  )}
+                >
+                  {parsed.priority === "high" ? "high" : "medium"}
+                </span>
+              )}
+              {parsed.dueLabel && (
+                <span className="inline-flex items-center gap-1 rounded-full bg-muted px-2 py-0.5 text-[11px] font-mono text-muted-foreground">
+                  <CalendarIcon className="size-2.5" />
+                  {parsed.dueLabel}
+                </span>
+              )}
+            </div>
           )}
         </div>
 
+        {/* ── Task list ── */}
+        {visibleItems.length === 0 ? (
+          <p className="text-center text-[12px] text-muted-foreground/60 py-8">
+            {tagFilters.size > 0
+              ? "No tasks with these tags."
+              : mode === "compact"
+                ? "No tasks for today. Add one above."
+                : "No tasks yet. Add one above."}
+          </p>
+        ) : isFull ? (
+          <div className="py-1">
+            {TASK_GROUP_ORDER.map((key) => (
+              <GroupSection
+                key={key}
+                groupKey={key}
+                items={grouped.get(key) ?? []}
+                allTags={tags}
+                selectMode={selectMode}
+                selectedIds={selectedIds}
+                onToggleSelect={toggleSelect}
+                onToggleItem={onToggleItem}
+                onDeleteItem={onDeleteItem}
+                onUpdateItem={onUpdateItem}
+                onReorderItems={onReorderItems}
+                collapsible={key === "done"}
+              />
+            ))}
+          </div>
+        ) : (
+          <FlatCompactList
+            items={compactSorted}
+            allTags={tags}
+            onToggleItem={onToggleItem}
+            onDeleteItem={onDeleteItem}
+            onUpdateItem={onUpdateItem}
+            onReorderItems={onReorderItems}
+          />
+        )}
+
         {/* ── Footer ── */}
-        {items.filter((it) => it.done).length > 0 && (
+        {!isFull && doneItems.length > 0 && (
           <>
             <Separator />
             <div className="px-4 py-2 flex items-center justify-between">
               <span className="text-[11px] text-muted-foreground">
-                {items.filter((it) => it.done).length} completed
+                {doneItems.length} completed
               </span>
               <button
                 type="button"
-                onClick={() =>
-                  items
-                    .filter((it) => it.done)
-                    .forEach((it) => onDeleteItem(it.id))
-                }
-                className="text-[11px] text-muted-foreground hover:text-destructive transition-colors"
+                onClick={() => doneItems.forEach((it) => onDeleteItem(it.id))}
+                className="text-[11px] text-muted-foreground hover:text-destructive transition-colors cursor-pointer"
               >
                 Clear completed
               </button>
@@ -963,5 +1336,56 @@ export function TodoManager({
         )}
       </CardContent>
     </Card>
+  );
+}
+
+// ── Flat list used by compact (dashboard widget) mode ──────────────────────
+function FlatCompactList({
+  items,
+  allTags,
+  onToggleItem,
+  onDeleteItem,
+  onUpdateItem,
+  onReorderItems,
+}: {
+  items: TodoItem[];
+  allTags: TodoTag[];
+  onToggleItem: (id: string) => void;
+  onDeleteItem: (id: string) => void;
+  onUpdateItem: (id: string, patch: TodoPatch) => void;
+  onReorderItems: (fromId: string, toId: string) => void;
+}) {
+  const [dragId, setDragId] = useState<string | null>(null);
+  const [overId, setOverId] = useState<string | null>(null);
+
+  return (
+    <div className="py-1">
+      {items.map((item) => (
+        <TaskRow
+          key={item.id}
+          item={item}
+          allTags={allTags}
+          onToggle={() => onToggleItem(item.id)}
+          onDelete={() => onDeleteItem(item.id)}
+          onUpdate={(patch) => onUpdateItem(item.id, patch)}
+          isDragOver={overId === item.id && dragId !== item.id}
+          dragHandlers={
+            item.done
+              ? undefined
+              : {
+                  onDragStart: () => setDragId(item.id),
+                  onDragEnter: () => setOverId(item.id),
+                  onDragEnd: () => {
+                    if (dragId && overId && dragId !== overId) {
+                      onReorderItems(dragId, overId);
+                    }
+                    setDragId(null);
+                    setOverId(null);
+                  },
+                }
+          }
+        />
+      ))}
+    </div>
   );
 }

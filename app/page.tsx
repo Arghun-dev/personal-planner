@@ -11,9 +11,10 @@ import { StreakCard } from "@/components/streak-card";
 import { GymTracker } from "@/components/gym-tracker";
 import { SleepTracker } from "@/components/sleep-tracker";
 import { SleepModal } from "@/components/sleep-modal";
-import { TodoManager } from "@/components/todo-manager";
+import { TaskList } from "@/components/task-list";
 import { BadHabitTracker } from "@/components/bad-habit-tracker";
 import { cn } from "@/lib/utils";
+import { isDueTodayOrUndated } from "@/lib/todo-utils";
 import { ClockIcon, CircleIcon, XIcon } from "lucide-react";
 
 function getTodayWeekIdx(): number {
@@ -112,6 +113,9 @@ export default function Home() {
     deleteTodoItem,
     updateTodoItem,
     reorderTodoItems,
+    bulkCompleteTodoItems,
+    bulkDeleteTodoItems,
+    bulkAddTagToItems,
     addTodoTag,
     updateTodoTag,
     deleteTodoTag,
@@ -163,11 +167,6 @@ export default function Home() {
               const isTodayGymSkipped =
                 gymDays[String(todayWeekIdx)] === "skipped";
 
-              const todayISO = (() => {
-                const d = new Date();
-                return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
-              })();
-
               return scheduleWithState.map((block, blockIdx) => {
                 // Tags that belong to this block. For the growth block, also
                 // include the study-specific tags: AI, Product, Startup.
@@ -182,7 +181,7 @@ export default function Home() {
                   .map((t) => t.id);
                 const blockTasks = todos.items.filter(
                   (it) =>
-                    (!it.dueDate || it.dueDate === todayISO) &&
+                    isDueTodayOrUndated(it) &&
                     it.tagIds.some((tid) => blockTagIds.includes(tid)),
                 );
                 const hasWakeRow = block.id === "s1" || block.id === "w1";
@@ -389,15 +388,18 @@ export default function Home() {
 
           <div className="mt-4">
             <SectionLabel>tasks</SectionLabel>
-            <TodoManager
+            <TaskList
+              mode="compact"
               items={todos.items}
               tags={todos.tags}
-              todayOnly
               onAddItem={addTodoItem}
               onToggleItem={toggleTodoItem}
               onDeleteItem={deleteTodoItem}
               onUpdateItem={updateTodoItem}
               onReorderItems={reorderTodoItems}
+              onBulkComplete={bulkCompleteTodoItems}
+              onBulkDelete={bulkDeleteTodoItems}
+              onBulkAddTag={bulkAddTagToItems}
               onAddTag={addTodoTag}
               onUpdateTag={updateTodoTag}
               onDeleteTag={deleteTodoTag}
