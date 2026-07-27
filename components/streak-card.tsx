@@ -12,10 +12,12 @@ export function StreakCard({ streak }: Props) {
       : `${streak} day${streak > 1 ? "s" : ""} of total commitment`;
 
   return (
-    <Card className="mb-4 rounded-[4px] gap-0">
+    <Card className="mb-4 gap-0">
       <CardContent className="p-5 flex items-center gap-4">
-        <div className="font-mono text-4xl sm:text-[48px] font-bold text-primary leading-none flex-shrink-0">
-          {streak}
+        <div className="flex items-center justify-center size-14 rounded-xl bg-primary/10 shrink-0">
+          <div className="font-mono text-3xl sm:text-[36px] font-bold text-primary leading-none">
+            {streak}
+          </div>
         </div>
         <div className="flex-1">
           <div className="font-sans text-[17px] sm:text-[20px] font-bold tracking-[0.05em] text-foreground">

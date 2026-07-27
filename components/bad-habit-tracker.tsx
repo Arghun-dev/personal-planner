@@ -59,7 +59,7 @@ export function BadHabitTracker({
         : `${progressDays}/7 days toward week ${badHabitStreak + 1}`;
 
   return (
-    <Card className="mb-4 rounded-[4px] gap-0">
+    <Card className="mb-4 gap-0">
       <CardContent className="p-4 sm:p-5">
         {/* Header */}
         <div className="flex items-center justify-between mb-3">
@@ -89,7 +89,7 @@ export function BadHabitTracker({
                 onClick={() => onToggle(key)}
                 title={`${dow} ${dayNum} — ${clean ? "clean ✓" : "not marked"}`}
                 className={cn(
-                  "flex flex-col items-center gap-0.5 py-1.5 rounded-[2px] border text-center transition-all cursor-pointer",
+                  "flex flex-col items-center gap-0.5 py-1.5 rounded-md border text-center transition-all cursor-pointer",
                   clean
                     ? "bg-primary border-primary text-primary-foreground"
                     : isToday

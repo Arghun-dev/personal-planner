@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useRef, useState, useEffect } from "react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import type { TodoItem, TodoPriority, TodoTag } from "@/lib/types";
 import {
@@ -33,6 +34,7 @@ import {
   ListChecksIcon,
   ChevronDownIcon,
   ChevronRightIcon,
+  BookOpenIcon,
 } from "lucide-react";
 
 export type TodoPatch = Partial<
@@ -443,6 +445,7 @@ function TaskRow({
   allTags,
   selectMode,
   selected,
+  hasNote,
   onToggleSelect,
   onToggle,
   onDelete,
@@ -454,6 +457,7 @@ function TaskRow({
   allTags: TodoTag[];
   selectMode?: boolean;
   selected?: boolean;
+  hasNote?: boolean;
   onToggleSelect?: () => void;
   onToggle: () => void;
   onDelete: () => void;
@@ -639,13 +643,14 @@ function TaskRow({
 
   return (
     <div
+      id={`todo-row-${item.id}`}
       draggable={!!dragHandlers}
       onDragStart={dragHandlers?.onDragStart}
       onDragEnter={dragHandlers?.onDragEnter}
       onDragEnd={dragHandlers?.onDragEnd}
       onDragOver={(e) => e.preventDefault()}
       className={cn(
-        "group flex items-start gap-2.5 px-2 py-2 mx-1.5 rounded-lg transition-colors hover:bg-muted/50",
+        "group flex items-start gap-2.5 px-2 py-2 mx-1.5 rounded-lg transition-colors hover:bg-muted/50 scroll-mt-24",
         item.done && "opacity-60",
         isDragOver && "border-t-2 border-primary",
         dragHandlers && "cursor-grab active:cursor-grabbing",
@@ -730,7 +735,30 @@ function TaskRow({
         )}
       </div>
 
-      <div className="flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity shrink-0 mt-0.5">
+      <div
+        className={cn(
+          "flex items-center gap-0.5 shrink-0 mt-0.5 transition-opacity",
+          hasNote
+            ? "opacity-100"
+            : "opacity-0 group-hover:opacity-100",
+        )}
+      >
+        <Link
+          href={`/todos/${item.id}/notes`}
+          onClick={(e) => e.stopPropagation()}
+          className={cn(
+            "relative inline-flex items-center justify-center size-6 rounded hover:bg-muted transition-colors",
+            hasNote
+              ? "text-primary"
+              : "text-muted-foreground hover:text-foreground",
+          )}
+          title={hasNote ? "Open knowledge note" : "Add knowledge note"}
+        >
+          <BookOpenIcon className="size-3" />
+          {hasNote && (
+            <span className="absolute top-0.5 right-0.5 size-1.5 rounded-full bg-primary" />
+          )}
+        </Link>
         <button
           type="button"
           onClick={startEdit}
@@ -774,6 +802,7 @@ function GroupSection({
   allTags,
   selectMode,
   selectedIds,
+  notedIds,
   onToggleSelect,
   onToggleItem,
   onDeleteItem,
@@ -786,6 +815,7 @@ function GroupSection({
   allTags: TodoTag[];
   selectMode: boolean;
   selectedIds: Set<string>;
+  notedIds?: Set<string>;
   onToggleSelect: (id: string) => void;
   onToggleItem: (id: string) => void;
   onDeleteItem: (id: string) => void;
@@ -837,6 +867,7 @@ function GroupSection({
               allTags={allTags}
               selectMode={selectMode}
               selected={selectedIds.has(item.id)}
+              hasNote={notedIds?.has(item.id)}
               onToggleSelect={() => onToggleSelect(item.id)}
               onToggle={() => onToggleItem(item.id)}
               onDelete={() => onDeleteItem(item.id)}
@@ -870,6 +901,7 @@ interface Props {
   items: TodoItem[];
   tags: TodoTag[];
   mode: "compact" | "full";
+  notedIds?: Set<string>;
   onAddItem: (
     text: string,
     tagIds: string[],
@@ -896,6 +928,7 @@ export function TaskList({
   items,
   tags,
   mode,
+  notedIds,
   onAddItem,
   onToggleItem,
   onDeleteItem,
@@ -1354,6 +1387,7 @@ export function TaskList({
                 allTags={tags}
                 selectMode={selectMode}
                 selectedIds={selectedIds}
+                notedIds={notedIds}
                 onToggleSelect={toggleSelect}
                 onToggleItem={onToggleItem}
                 onDeleteItem={onDeleteItem}
@@ -1367,6 +1401,7 @@ export function TaskList({
           <FlatCompactList
             items={compactSorted}
             allTags={tags}
+            notedIds={notedIds}
             onToggleItem={onToggleItem}
             onDeleteItem={onDeleteItem}
             onUpdateItem={onUpdateItem}
@@ -1401,6 +1436,7 @@ export function TaskList({
 function FlatCompactList({
   items,
   allTags,
+  notedIds,
   onToggleItem,
   onDeleteItem,
   onUpdateItem,
@@ -1408,6 +1444,7 @@ function FlatCompactList({
 }: {
   items: TodoItem[];
   allTags: TodoTag[];
+  notedIds?: Set<string>;
   onToggleItem: (id: string) => void;
   onDeleteItem: (id: string) => void;
   onUpdateItem: (id: string, patch: TodoPatch) => void;
@@ -1423,6 +1460,7 @@ function FlatCompactList({
           key={item.id}
           item={item}
           allTags={allTags}
+          hasNote={notedIds?.has(item.id)}
           onToggle={() => onToggleItem(item.id)}
           onDelete={() => onDeleteItem(item.id)}
           onUpdate={(patch) => onUpdateItem(item.id, patch)}

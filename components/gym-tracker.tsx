@@ -15,7 +15,7 @@ export function GymTracker({ gymDays, gymCount, todayIdx, onToggle }: Props) {
   const barWidth = Math.min((gymCount / 5) * 100, 100);
 
   return (
-    <Card className="mb-4 rounded-[4px] gap-0">
+    <Card className="mb-4 gap-0">
       <CardContent className="p-4 sm:p-5">
         <div className="flex items-baseline gap-2">
           <span className="font-mono text-[22px] font-bold text-destructive">
@@ -41,7 +41,7 @@ export function GymTracker({ gymDays, gymCount, todayIdx, onToggle }: Props) {
                 onClick={() => !isFuture && onToggle(i)}
                 disabled={isFuture}
                 className={cn(
-                  "h-auto aspect-square flex-col gap-0 py-2 rounded-[2px] font-normal",
+                  "h-auto aspect-square flex-col gap-0 py-2 rounded-lg font-normal",
                   i === todayIdx && !done && !skipped && "border-primary",
                   skipped && "border-destructive text-destructive",
                   isFuture && "opacity-30 cursor-not-allowed",
@@ -60,7 +60,7 @@ export function GymTracker({ gymDays, gymCount, todayIdx, onToggle }: Props) {
 
         <Progress
           value={barWidth}
-          className="mt-2 h-[6px] rounded-[1px] [&_[data-slot=progress-indicator]]:bg-destructive"
+          className="mt-2 h-[6px] [&_[data-slot=progress-indicator]]:bg-destructive"
         />
       </CardContent>
     </Card>
