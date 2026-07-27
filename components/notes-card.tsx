@@ -8,7 +8,7 @@ interface Props {
 
 export function NotesCard({ value, onChange }: Props) {
   return (
-    <Card className="rounded-[4px] gap-0">
+    <Card className="gap-0">
       <CardContent className="p-5">
         <Textarea
           value={value}

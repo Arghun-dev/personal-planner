@@ -9,7 +9,7 @@ import type {
   TodoTag,
 } from "@/lib/types";
 import { getSchedule, DAYS, DAYS_FULL, MONTHS } from "@/lib/constants";
-import { loadState, saveState } from "@/lib/actions";
+import { loadState, saveState, deleteTodoNotes, loadNoteTodoIds } from "@/lib/actions";
 
 // Built-in tags matching the schedule block tag types. IDs are stable so
 // they can be merged without duplication across state loads.
@@ -189,6 +189,11 @@ function persist(newState: AppState) {
 export function usePersonalPlanner() {
   const [state, setState] = useState<AppState>(DEFAULT_STATE);
   const [hydrated, setHydrated] = useState(false);
+  const [notedTodoIds, setNotedTodoIds] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    loadNoteTodoIds().then((ids) => setNotedTodoIds(new Set(ids)));
+  }, []);
 
   useEffect(() => {
     loadState().then((loaded) => {
@@ -444,6 +449,13 @@ export function usePersonalPlanner() {
       persist(next);
       return next;
     });
+    setNotedTodoIds((prev) => {
+      if (!prev.has(id)) return prev;
+      const next = new Set(prev);
+      next.delete(id);
+      return next;
+    });
+    setTimeout(() => void deleteTodoNotes([id]), 0);
   }, []);
 
   const updateTodoItem = useCallback(
@@ -503,6 +515,15 @@ export function usePersonalPlanner() {
       persist(next);
       return next;
     });
+    setNotedTodoIds((prev) => {
+      const next = new Set(prev);
+      let changed = false;
+      for (const id of ids) {
+        if (next.delete(id)) changed = true;
+      }
+      return changed ? next : prev;
+    });
+    setTimeout(() => void deleteTodoNotes(ids), 0);
   }, []);
 
   const bulkAddTagToItems = useCallback((ids: string[], tagId: string) => {
@@ -638,6 +659,7 @@ export function usePersonalPlanner() {
     plannedWakeTime,
     notes,
     todos,
+    notedTodoIds,
     badHabits,
     badHabitStreak,
     badHabitCleanDays,

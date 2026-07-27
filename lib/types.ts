@@ -35,6 +35,21 @@ export interface TodoState {
 }
 // ───────────────────────────────────────────────────────────────────────────
 
+// ── Knowledge Notes ──────────────────────────────────────────────────────
+/** A BlockNote document — an array of opaque block objects (from @blocknote/core). */
+export type NoteContent = Record<string, unknown>[];
+
+export interface TodoNote {
+  id: string;
+  todoId: string;
+  title: string;
+  content: NoteContent;
+  plainText: string;
+  createdAt: string;
+  updatedAt: string;
+}
+// ───────────────────────────────────────────────────────────────────────────
+
 export interface ScheduleItem {
   id: string;
   time: string;

@@ -25,13 +25,13 @@ import {
 
 // ── Protocol colours ─────────────────────────────────────────────────────────
 const PROTOCOL_COLORS: Record<string, string> = {
-  sleep: "#7c3aed",
-  growth: "#2563eb",
-  work: "#ea580c",
-  gym: "#dc2626",
+  sleep: "var(--primary)",
+  growth: "var(--chart-4)",
+  work: "var(--chart-3)",
+  gym: "var(--destructive)",
   meal: "#ca8a04",
-  rest: "#16a34a",
-  other: "#9ca3af",
+  rest: "var(--chart-1)",
+  other: "var(--muted-foreground)",
 };
 const PROTOCOL_ORDER = [
   "sleep",
@@ -44,17 +44,18 @@ const PROTOCOL_ORDER = [
 ];
 
 // ── Shared chart styles ───────────────────────────────────────────────────────
-const TICK_STYLE = { fill: "#9ca3af", fontSize: 11 } as const;
-const GRID_STROKE = "#f3f4f6";
+const TICK_STYLE = { fill: "var(--muted-foreground)", fontSize: 11 } as const;
+const GRID_STROKE = "var(--border)";
 const TOOLTIP_STYLE: React.CSSProperties = {
-  background: "#fff",
-  border: "1px solid #e5e7eb",
-  borderRadius: 6,
+  background: "var(--popover)",
+  border: "1px solid var(--border)",
+  borderRadius: 10,
   fontSize: 12,
-  color: "#374151",
-  padding: "6px 10px",
+  color: "var(--popover-foreground)",
+  padding: "8px 12px",
+  boxShadow: "var(--shadow-card)",
 };
-const TOOLTIP_CURSOR = { stroke: "#e5e7eb", strokeWidth: 1 };
+const TOOLTIP_CURSOR = { stroke: "var(--border)", strokeWidth: 1 };
 
 // ── Color helpers ─────────────────────────────────────────────────────────────
 function sleepColor(hrs: number) {
@@ -324,7 +325,7 @@ export default function DashboardPage() {
   }));
 
   return (
-    <div className="min-h-screen bg-muted/30 text-foreground font-sans">
+    <div className="min-h-screen bg-background text-foreground font-sans">
       <Header
         streak={streak}
         score={score}

@@ -100,6 +100,7 @@ export default function Home() {
     todaySleepEntry,
     plannedWakeTime,
     todos,
+    notedTodoIds,
     badHabits,
     badHabitStreak,
     badHabitCleanDays,
@@ -392,6 +393,7 @@ export default function Home() {
               mode="compact"
               items={todos.items}
               tags={todos.tags}
+              notedIds={notedTodoIds}
               onAddItem={addTodoItem}
               onToggleItem={toggleTodoItem}
               onDeleteItem={deleteTodoItem}

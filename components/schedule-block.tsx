@@ -74,20 +74,22 @@ export function ScheduleBlock({
       onClick={interactive ? onToggle : undefined}
       disabled={!interactive}
       className={cn(
-        "w-full text-left border rounded-lg mb-0 overflow-hidden transition-colors duration-200",
-        interactive ? "cursor-pointer" : "cursor-default",
+        "w-full text-left border rounded-xl mb-0 overflow-hidden transition-all duration-200 border-l-[3px] shadow-sm",
+        interactive
+          ? "cursor-pointer shadow-card-hover hover:-translate-y-px"
+          : "cursor-default",
         isPrompting && "block-bump",
         isDone
-          ? "border-dos-green-dim bg-dos-green-bg"
+          ? "border-border border-l-chart-1 bg-dos-green-bg"
           : isPartial
-            ? "border-yellow-300 bg-yellow-50 dark:bg-yellow-950/20"
+            ? "border-border border-l-yellow-400 bg-yellow-50 dark:bg-yellow-950/20"
             : isFailed
-              ? "border-destructive/40 bg-destructive/5"
+              ? "border-border border-l-destructive bg-destructive/5"
               : isActive
-                ? "border-dos-amber-dim bg-dos-amber-bg shadow-[0_0_0_1px_var(--dos-amber-dim)]"
+                ? "border-border border-l-primary bg-dos-amber-bg shadow-[0_0_0_1px_var(--dos-amber-dim)]"
                 : isPrompting
-                  ? "border-orange-300 bg-orange-50 dark:bg-orange-950/20"
-                  : "border-border bg-card hover:border-input",
+                  ? "border-border border-l-orange-400 bg-orange-50 dark:bg-orange-950/20"
+                  : "border-border border-l-border bg-card hover:border-l-input",
         !interactive &&
           !isActive &&
           !isDone &&
@@ -98,7 +100,7 @@ export function ScheduleBlock({
           : "",
       )}
     >
-      <div className="flex items-center gap-3 sm:gap-4 px-3 sm:px-4 py-3 sm:py-[0.85rem]">
+      <div className="flex items-center gap-3 sm:gap-4 px-3.5 sm:px-4 py-3 sm:py-[0.85rem]">
         <StatusCheckbox status={status} />
 
         {/* Time */}
@@ -156,7 +158,7 @@ export function ScheduleBlock({
         {/* Tag */}
         <Badge
           variant="outline"
-          className={`tag-${tag} font-mono text-[9px] font-bold tracking-[0.15em] uppercase rounded-[2px] h-auto py-0.75 border-transparent`}
+          className={`tag-${tag} font-mono text-[9px] font-bold tracking-[0.15em] uppercase rounded-full h-auto py-0.75 border-transparent`}
         >
           {tag}
         </Badge>

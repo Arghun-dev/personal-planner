@@ -14,8 +14,14 @@ export function ScoreCard({ done, total, score }: Props) {
   const isHigh = score >= 80;
 
   return (
-    <Card className="mb-4 rounded-[4px] gap-0">
-      <CardContent className="p-5">
+    <Card className="mb-4 gap-0 relative overflow-hidden">
+      <div
+        className={cn(
+          "absolute -top-10 -right-10 size-32 rounded-full blur-3xl opacity-20 pointer-events-none",
+          isHigh ? "bg-chart-1" : "bg-primary",
+        )}
+      />
+      <CardContent className="p-5 relative">
         <div className="font-mono text-[10px] text-muted-foreground tracking-[0.15em] uppercase">
           Today&apos;s Completion
         </div>
@@ -32,7 +38,7 @@ export function ScoreCard({ done, total, score }: Props) {
         <Progress
           value={score}
           className={cn(
-            "my-3 h-[6px] rounded-[1px]",
+            "my-3 h-[6px]",
             isHigh && "[&_[data-slot=progress-indicator]]:bg-chart-1",
           )}
         />

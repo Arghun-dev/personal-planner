@@ -54,7 +54,7 @@ export function SleepTracker({
   onOpenModal,
 }: Props) {
   return (
-    <Card className="mb-4 rounded-[4px] gap-0">
+    <Card className="mb-4 gap-0">
       <CardContent className="p-5">
         <div className="flex items-center justify-between">
           <div>
@@ -120,9 +120,9 @@ export function SleepTracker({
             const isGoal = hrs >= 8;
             return (
               <div key={key} className="flex flex-col items-center gap-[3px]">
-                <div className="h-[40px] w-full bg-border rounded-[1px] flex items-end overflow-hidden">
+                <div className="h-[40px] w-full bg-muted rounded-sm flex items-end overflow-hidden">
                   <div
-                    className="w-full rounded-[1px] transition-[height] duration-300"
+                    className="w-full rounded-sm transition-[height] duration-300"
                     style={{
                       height: `${pct}%`,
                       background: isGoal

@@ -2,6 +2,10 @@
 @import "tw-animate-css";
 @import "shadcn/tailwind.css";
 
+/* Path to the installed @blocknote/shadcn package, so Tailwind generates
+   the utility classes its components reference. */
+@source "../node_modules/@blocknote/shadcn";
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -86,25 +90,25 @@
     var(--muted-foreground) 60%,
     var(--background)
   );
-  /* Violet Bloom */
-  --background: oklch(0.994 0 0);
-  --foreground: oklch(0 0 0);
-  --card: oklch(0.994 0 0);
-  --card-foreground: oklch(0 0 0);
-  --popover: oklch(0.9911 0 0);
-  --popover-foreground: oklch(0 0 0);
+  /* Violet Bloom — softened, with a tinted canvas so elevated cards read clearly */
+  --background: oklch(0.965 0.008 286);
+  --foreground: oklch(0.18 0.012 286);
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.18 0.012 286);
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.18 0.012 286);
   --primary: oklch(0.5393 0.2713 286.7462);
   --primary-foreground: oklch(1 0 0);
   --secondary: oklch(0.954 0.0063 255.4755);
   --secondary-foreground: oklch(0.1344 0 0);
-  --muted: oklch(0.9702 0 0);
+  --muted: oklch(0.955 0.006 286);
   --muted-foreground: oklch(0.4386 0 0);
   --accent: oklch(0.9393 0.0288 266.368);
   --accent-foreground: oklch(0.5445 0.1903 259.4848);
   --destructive: oklch(0.629 0.1902 23.0704);
-  --border: oklch(0.93 0.0094 286.2156);
+  --border: oklch(0.915 0.008 286.2156);
   --input: oklch(0.9401 0 0);
-  --ring: oklch(0 0 0);
+  --ring: oklch(0.5393 0.2713 286.7462);
   --chart-1: oklch(0.7459 0.1483 156.4499);
   --chart-2: oklch(0.5393 0.2713 286.7462);
   --chart-3: oklch(0.7336 0.1758 50.5517);
@@ -118,7 +122,11 @@
   --sidebar-accent-foreground: oklch(0 0 0);
   --sidebar-border: oklch(0.9401 0 0);
   --sidebar-ring: oklch(0 0 0);
-  --radius: 0.375rem;
+  --radius: 0.625rem;
+  --shadow-card: 0 1px 2px rgba(20, 12, 48, 0.04),
+    0 10px 24px -14px rgba(76, 29, 209, 0.16);
+  --shadow-card-hover: 0 2px 4px rgba(20, 12, 48, 0.05),
+    0 16px 32px -14px rgba(76, 29, 209, 0.22);
 }
 
 .dark {
@@ -153,17 +161,34 @@
   --sidebar-accent-foreground: oklch(0.6132 0.2294 291.7437);
   --sidebar-border: oklch(0.3289 0.0092 268.3843);
   --sidebar-ring: oklch(0.6132 0.2294 291.7437);
+  --shadow-card: 0 1px 2px rgba(0, 0, 0, 0.2), 0 10px 24px -14px rgba(0, 0, 0, 0.45);
+  --shadow-card-hover: 0 2px 4px rgba(0, 0, 0, 0.25), 0 16px 32px -14px rgba(0, 0, 0, 0.5);
 }
 
 @layer base {
   * {
     @apply border-border outline-ring/50;
   }
+  /* Additional border styles required inside the BlockNote (shadcn) editor. */
+  .bn-shadcn * {
+    @apply border-border outline-ring/50;
+  }
   body {
     @apply bg-background text-foreground;
+    background-image: radial-gradient(
+      circle at 12% 0%,
+      color-mix(in oklch, var(--primary) 7%, transparent),
+      transparent 40%
+    );
+    background-attachment: fixed;
   }
   @media (min-width: 768px) {
-    body {
+    /* `.bn-no-zoom` is toggled on <body> while a Knowledge Note editor is
+       mounted (see note-page.tsx). CSS `zoom` on an ancestor breaks
+       floating-ui's position math (used by BlockNote's side menu, slash
+       menu, and toolbars), so that page opts out of the app-wide zoom
+       entirely rather than trying to compensate for it. */
+    body:not(.bn-no-zoom) {
       zoom: 1.25;
     }
   }
@@ -172,43 +197,51 @@
   }
 }
 
-/* Tag badge colors */
+/* Elevated surface used by cards */
+.shadow-card {
+  box-shadow: var(--shadow-card);
+}
+.shadow-card-hover:hover {
+  box-shadow: var(--shadow-card-hover);
+}
+
+/* Tag badge colors — pill-style, slightly deeper tint for contrast */
 .tag-sleep {
-  background-color: color-mix(in oklch, var(--primary) 12%, white) !important;
+  background-color: color-mix(in oklch, var(--primary) 14%, white) !important;
   color: var(--primary) !important;
 }
 .tag-growth {
   background-color: color-mix(
     in oklch,
-    var(--accent-foreground) 12%,
+    var(--accent-foreground) 14%,
     white
   ) !important;
   color: var(--accent-foreground) !important;
 }
 .tag-work {
-  background-color: color-mix(in oklch, var(--chart-4) 12%, white) !important;
+  background-color: color-mix(in oklch, var(--chart-4) 14%, white) !important;
   color: var(--chart-4) !important;
 }
 .tag-gym {
   background-color: color-mix(
     in oklch,
-    var(--destructive) 12%,
+    var(--destructive) 14%,
     white
   ) !important;
   color: var(--destructive) !important;
 }
 .tag-meal {
-  background-color: color-mix(in oklch, var(--chart-3) 12%, white) !important;
+  background-color: color-mix(in oklch, var(--chart-3) 16%, white) !important;
   color: color-mix(in oklch, var(--chart-3) 80%, black) !important;
 }
 .tag-rest {
-  background-color: color-mix(in oklch, var(--chart-1) 12%, white) !important;
-  color: var(--chart-1) !important;
+  background-color: color-mix(in oklch, var(--chart-1) 14%, white) !important;
+  color: color-mix(in oklch, var(--chart-1) 75%, black) !important;
 }
 .tag-other {
   background-color: color-mix(
     in oklch,
-    var(--muted-foreground) 12%,
+    var(--muted-foreground) 14%,
     white
   ) !important;
   color: var(--muted-foreground) !important;
@@ -247,4 +280,82 @@
 }
 .dos-pulse {
   animation: dos-pulse 2s infinite;
+}
+
+@keyframes task-row-flash {
+  0%,
+  100% {
+    background-color: transparent;
+  }
+  25%,
+  75% {
+    background-color: color-mix(in oklch, var(--primary) 14%, transparent);
+  }
+}
+.task-row-highlight {
+  animation: task-row-flash 1.6s ease-in-out;
+  border-radius: var(--radius-lg);
+}
+
+/* ── Knowledge Note editor (BlockNote) ──────────────────────────────────── */
+/* Match the app's own type family + color tokens instead of BlockNote's
+   defaults, and give the canvas a clean, distraction-free feel consistent
+   with the rest of the app's card surfaces. */
+.knowledge-editor {
+  /* Remap BlockNote's own color variables onto the app's shadcn tokens.
+     The default editor text (#3f3f3f) reads as light/washed-out, which is
+     what showed up as "light gray" while typing. */
+  --bn-colors-editor-text: #343333;
+  --bn-colors-editor-background: transparent;
+  --bn-colors-menu-text: var(--popover-foreground);
+  --bn-colors-menu-background: var(--popover);
+  --bn-colors-tooltip-text: var(--popover-foreground);
+  --bn-colors-tooltip-background: var(--popover);
+  --bn-colors-hovered-text: var(--foreground);
+  --bn-colors-hovered-background: var(--muted);
+  --bn-colors-selected-text: var(--primary-foreground);
+  --bn-colors-selected-background: var(--primary);
+  --bn-colors-disabled-text: var(--muted-foreground);
+  --bn-colors-disabled-background: var(--muted);
+  --bn-colors-shadow: var(--border);
+  --bn-colors-border: var(--border);
+  --bn-colors-side-menu: var(--muted-foreground);
+  --bn-font-family: var(--font-sans);
+  /* A bit smaller than BlockNote's 16px default, and this also lands at the
+     correctly-corrected size now that .bn-no-zoom removes the app's 1.25x
+     page zoom on this route (see body:not(.bn-no-zoom) above). */
+  font-size: 14px;
+}
+.knowledge-editor .bn-shadcn,
+.knowledge-editor .bn-editor,
+.knowledge-editor .bn-default-styles {
+  font-family: var(--font-sans);
+  font-size: 14px;
+  background: transparent;
+}
+.knowledge-editor .bn-editor {
+  padding: 0;
+}
+.knowledge-editor .ProseMirror {
+  padding: 0 !important;
+}
+/* BlockNote's own stylesheet re-declares --bn-colors-editor-text directly
+   on .bn-root (the element BlockNoteView renders), which shadows the value
+   set above on .knowledge-editor. Re-declare it here at higher specificity
+   so it actually wins, and set `color` directly as a belt-and-braces
+   fallback for the text itself. */
+.knowledge-editor .bn-root {
+  --bn-colors-editor-text: #343333;
+}
+.knowledge-editor .bn-editor,
+.knowledge-editor .ProseMirror {
+  color: #343333;
+}
+/* Side menu (drag handle + block "+") and formatting/slash menus are
+   positioned by floating-ui relative to the caret/block — they only align
+   correctly when nothing in the ancestor chain has CSS `zoom` applied. */
+.knowledge-editor .bn-side-menu,
+.knowledge-editor .bn-suggestion-menu,
+.knowledge-editor .bn-formatting-toolbar {
+  font-size: 13px;
 }

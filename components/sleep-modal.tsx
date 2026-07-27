@@ -52,7 +52,7 @@ export function SleepModal({ open, onSave, onClose, currentEntry }: Props) {
 
   return (
     <Dialog open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
-      <DialogContent showCloseButton={false} className="rounded-lg w-85">
+      <DialogContent showCloseButton={false} className="rounded-2xl w-85">
         <DialogHeader>
           <div className="font-mono text-[11px] tracking-widest text-muted-foreground uppercase">
             {"// Log Sleep"}
@@ -75,7 +75,7 @@ export function SleepModal({ open, onSave, onClose, currentEntry }: Props) {
                   setBedTime(e.target.value);
                   setHrsOverride(null);
                 }}
-                className="font-mono text-[13px] rounded-[2px]"
+                className="font-mono text-[13px]"
               />
             </div>
             <div className="space-y-1.5">
@@ -89,7 +89,7 @@ export function SleepModal({ open, onSave, onClose, currentEntry }: Props) {
                   setWakeTime(e.target.value);
                   setHrsOverride(null);
                 }}
-                className="font-mono text-[13px] rounded-[2px]"
+                className="font-mono text-[13px]"
               />
             </div>
           </div>
@@ -110,7 +110,7 @@ export function SleepModal({ open, onSave, onClose, currentEntry }: Props) {
               step={0.5}
               value={hrs}
               onChange={(e) => setHrsOverride(parseFloat(e.target.value))}
-              className="font-mono text-[20px] text-center rounded-[2px]"
+              className="font-mono text-[20px] text-center"
             />
           </div>
         </div>

@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { usePersonalPlanner } from "@/hooks/use-personal-planner";
 import { Header } from "@/components/header";
 import { TaskList } from "@/components/task-list";
@@ -8,6 +9,7 @@ export default function TodosPage() {
   const {
     hydrated,
     todos,
+    notedTodoIds,
     streak,
     score,
     gymCount,
@@ -25,6 +27,21 @@ export default function TodosPage() {
     updateTodoTag,
     deleteTodoTag,
   } = usePersonalPlanner();
+
+  // Deep-link support: /todos?focus=<todoId> (used by the Knowledge page's
+  // "Open Todo" action) scrolls to and briefly highlights that task row.
+  useEffect(() => {
+    if (!hydrated) return;
+    const focusId = new URLSearchParams(window.location.search).get("focus");
+    if (!focusId) return;
+    const el = document.getElementById(`todo-row-${focusId}`);
+    if (!el) return;
+    el.scrollIntoView({ behavior: "smooth", block: "center" });
+    el.classList.add("task-row-highlight");
+    const t = setTimeout(() => el.classList.remove("task-row-highlight"), 1600);
+    window.history.replaceState(null, "", "/todos");
+    return () => clearTimeout(t);
+  }, [hydrated]);
 
   if (!hydrated) return null;
 
@@ -53,6 +70,7 @@ export default function TodosPage() {
           mode="full"
           items={todos.items}
           tags={todos.tags}
+          notedIds={notedTodoIds}
           onAddItem={addTodoItem}
           onToggleItem={toggleTodoItem}
           onDeleteItem={deleteTodoItem}
